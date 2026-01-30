@@ -1,35 +1,59 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.tsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import BasicLayout from './layouts/BasicLayout';
+import LoginPage from './pages/Login';
+import DashboardPage from './pages/Dashboard';
+import UserListPage from './pages/UserList';
 
-function App() {
-  const [count, setCount] = useState(0)
+import TranslationsPage from './pages/Translations';
+import ContentRaidsPage from './pages/ContentRaids';
+import ContentPvpPage from './pages/ContentPvp';
+import RbacRolesPage from './pages/RbacRoles';
+import RbacAdminUsersPage from './pages/RbacAdminUsers';
+import AuditPage from './pages/Audit';
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const token = localStorage.getItem('gw2_admin_token');
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
 }
 
-export default App
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <BasicLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="users" element={<UserListPage />} />
+
+          <Route path="translations" element={<TranslationsPage />} />
+
+          <Route path="content" element={<Navigate to="/content/raids" replace />} />
+          <Route path="content/raids" element={<ContentRaidsPage />} />
+          <Route path="content/pvp" element={<ContentPvpPage />} />
+
+          <Route path="rbac" element={<Navigate to="/rbac/admin-users" replace />} />
+          <Route path="rbac/roles" element={<RbacRolesPage />} />
+          <Route path="rbac/admin-users" element={<RbacAdminUsersPage />} />
+
+          <Route path="audit" element={<AuditPage />} />
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

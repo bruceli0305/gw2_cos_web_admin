@@ -1,0 +1,1282 @@
+********************************************************************************
+导出文件 #001
+项目: gw2_cos_web_admin
+********************************************************************************
+
+
+================================================================================
+文件: src\App.css
+大小: 606 字节
+================================================================================
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+================================================================================
+文件: src\index.css
+大小: 1531 字节
+================================================================================
+
+/* src/index.css */
+
+:root {
+  /* 使用 Ant Design 推荐的系统字体栈 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* 字体渲染优化 */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 关键：确保 HTML、Body 和 React 挂载点高度为 100%，否则侧边栏无法撑满 */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* 防止最外层出现双重滚动条 */
+}
+
+body {
+  /* Ant Design 经典的浅灰色背景，避免加载时的白屏闪烁 */
+  background-color: #f0f2f5;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* 移除 Vite 默认的链接样式，避免干扰组件 */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 移除 Vite 默认的 Button 样式，完全交给 Ant Design 组件控制 */
+/* 如果保留原来的 button 样式，会污染 AntD 的 <Button> 组件 */
+button {
+  all: unset;
+}
+
+/* 修复 ProLayout 在某些极简模式下可能撑不满的问题 */
+.ant-pro-layout {
+  min-height: 100vh;
+}
+
+/* 定义滚动条样式 (可选，为了更好看) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+================================================================================
+文件: index.html
+大小: 363 字节
+================================================================================
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>admin-frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
+================================================================================
+文件: eslint.config.js
+大小: 616 字节
+================================================================================
+
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+  },
+])
+
+
+================================================================================
+文件: package.json
+大小: 852 字节
+================================================================================
+
+{
+  "name": "admin-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/pro-components": "^2.8.10",
+    "antd": "^6.2.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}
+
+
+================================================================================
+文件: tsconfig.app.json
+大小: 732 字节
+================================================================================
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
+
+
+================================================================================
+文件: tsconfig.json
+大小: 119 字节
+================================================================================
+
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+
+
+================================================================================
+文件: tsconfig.node.json
+大小: 653 字节
+================================================================================
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+
+================================================================================
+文件: README.md
+大小: 2555 字节
+================================================================================
+
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+
+================================================================================
+文件: export_files.py
+大小: 6676 字节
+================================================================================
+
+#!/usr/bin/env python3
+"""
+文件导出脚本
+将项目中的所有文件内容导出到txt文件中，每个txt文件大约1500行
+忽略node_modules目录
+"""
+
+
+import os
+import re
+from pathlib import Path
+
+
+def should_ignore_file(filepath):
+    """判断是否应该忽略该文件"""
+    # 忽略node_modules目录及其子目录
+    if 'node_modules' in filepath.parts:
+        return True
+    
+    # 忽略导出目录本身
+    if 'exported_files' in filepath.parts:
+        return True
+    
+    # 忽略常见的二进制文件、构建产物等
+    ignore_extensions = {
+        '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.svg',
+        '.pdf', '.doc', '.docx', '.xls', '.xlsx',
+        '.zip', '.tar', '.gz', '.rar', '.7z',
+        '.exe', '.dll', '.so', '.dylib',
+        '.pyc', '.pyo', '.pyd',
+        '.class', '.jar',
+        '.log', '.tmp', '.cache',
+        '.tsbuildinfo', '.lcov',
+        '.tgz', '.lock'
+    }
+    
+    if filepath.suffix.lower() in ignore_extensions:
+        return True
+    
+    # 忽略隐藏文件和系统文件
+    if filepath.name.startswith('.') or filepath.name.startswith('~'):
+        return True
+    
+    # 忽略常见的构建和缓存目录
+    ignore_directories = {
+        'dist', 'build', 'out', 'coverage', '.nyc_output',
+        '.next', '.nuxt', '.cache', '.parcel-cache',
+        '.svelte-kit', 'node_modules', 'jspm_packages',
+        'web_modules', 'bower_components', '.grunt',
+        'lib-cov', 'logs', 'pids', 'report',
+        '.temp', '.pnpm-store', '.git', 'exported_files', 'data'
+    }
+    
+    for part in filepath.parts:
+        if part in ignore_directories:
+            return True
+    
+    # 忽略常见的配置文件和环境文件
+    ignore_filenames = {
+        'pnpm-lock.yaml', 'package-lock.json', 'yarn.lock',
+        '.npmrc', '.yarnrc', '.env', '.env.local', '.env.production',
+        '.eslintcache', '.stylelintcache', '.node_repl_history',
+        'npm-debug.log', 'yarn-debug.log', 'yarn-error.log',
+        'lerna-debug.log', 'exported_files', 'data'
+    }
+    
+    if filepath.name in ignore_filenames:
+        return True
+    
+    # 忽略特定模式的文件
+    ignore_patterns = [
+        r'^report\.\d+\.\d+\.\d+\.\d+\.json$',  # 诊断报告
+        r'^\.\w+$',  # 隐藏文件
+        r'^~\w+',  # 临时文件
+        r'\.pid(\.lock)?$',  # PID文件
+        r'\.seed$'  # 种子文件
+    ]
+    
+    for pattern in ignore_patterns:
+        if re.match(pattern, filepath.name):
+            return True
+    
+    return False
+
+
+def read_file_content(filepath):
+    """读取文件内容，处理可能的编码问题"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return f.read()
+    except UnicodeDecodeError:
+        try:
+            with open(filepath, 'r', encoding='latin-1') as f:
+                return f.read()
+        except:
+            return f"[无法读取文件: {filepath}]"
+    except Exception as e:
+        return f"[读取文件出错: {filepath}, 错误: {str(e)}]"
+
+
+def format_file_header(filepath, relative_path):
+    """格式化文件头部信息"""
+    return f"\n{'='*80}\n文件: {relative_path}\n大小: {filepath.stat().st_size} 字节\n{'='*80}\n\n"
+
+
+def export_files_to_txt(project_root, output_dir='exported_files', max_lines_per_file=1500):
+    """
+    导出所有文件到txt文件中
+    
+    Args:
+        project_root: 项目根目录路径
+        output_dir: 输出目录名称
+        max_lines_per_file: 每个txt文件的最大行数
+    """
+    project_path = Path(project_root)
+    output_path = project_path / output_dir
+    
+    # 创建输出目录
+    output_path.mkdir(exist_ok=True)
+    
+    # 收集所有需要导出的文件
+    all_files = []
+    for filepath in project_path.rglob('*'):
+        if filepath.is_file() and not should_ignore_file(filepath):
+            all_files.append(filepath)
+    
+    print(f"找到 {len(all_files)} 个文件需要导出")
+    
+    # 按文件扩展名排序，使相似文件类型在一起
+    all_files.sort(key=lambda x: x.suffix)
+    
+    # 导出文件
+    current_file_index = 1
+    current_line_count = 0
+    current_output_file = None
+    
+    for i, filepath in enumerate(all_files):
+        relative_path = filepath.relative_to(project_path)
+        
+        # 读取文件内容
+        content = read_file_content(filepath)
+        
+        # 计算行数（包括文件头部的行数）
+        header_lines = format_file_header(filepath, relative_path).count('\n') + 1
+        content_lines = content.count('\n') + 1
+        total_lines = header_lines + content_lines
+        
+        # 如果当前输出文件已满或不存在，创建新的输出文件
+        if current_output_file is None or current_line_count + total_lines > max_lines_per_file:
+            if current_output_file:
+                current_output_file.close()
+            
+            output_filename = output_path / f"exported_files_{current_file_index:03d}.txt"
+            current_output_file = open(output_filename, 'w', encoding='utf-8')
+            current_file_index += 1
+            current_line_count = 0
+            
+            # 写入文件头
+            header = f"{'*'*80}\n"
+            header += f"导出文件 #{current_file_index-1:03d}\n"
+            header += f"项目: {project_path.name}\n"
+            header += f"{'*'*80}\n\n"
+            current_output_file.write(header)
+            current_line_count += header.count('\n') + 1
+        
+        # 写入文件内容
+        file_header = format_file_header(filepath, relative_path)
+        current_output_file.write(file_header)
+        current_output_file.write(content)
+        current_output_file.write('\n')  # 文件间添加空行分隔
+        
+        current_line_count += total_lines
+        
+        print(f"进度: {i+1}/{len(all_files)} - 已导出: {relative_path}")
+    
+    # 关闭最后一个输出文件
+    if current_output_file:
+        current_output_file.close()
+    
+    print(f"\n导出完成！共生成 {current_file_index-1} 个txt文件")
+    print(f"输出目录: {output_path}")
+
+
+def main():
+    """主函数"""
+    # 获取当前脚本所在目录的父目录（项目根目录）
+    script_dir = Path(__file__).parent
+    project_root = script_dir
+    
+    print(f"项目根目录: {project_root}")
+    print("开始导出文件...")
+    
+    export_files_to_txt(project_root, max_lines_per_file=1500)
+
+
+if __name__ == "__main__":
+    main()
+
+================================================================================
+文件: vite.config.ts
+大小: 604 字节
+================================================================================
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      // 将 /api 开头的请求转发到后端
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      // 将 /admin 开头的请求转发到后端
+      '/admin': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      // 兼容 v1 写法
+      '/v1': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      }
+    }
+  }
+})
+
+
+================================================================================
+文件: src\services\request.ts
+大小: 1921 字节
+================================================================================
+
+// src/services/request.ts
+import { message } from 'antd';
+
+export const TOKEN_KEY = 'gw2_admin_token';
+
+// 简单的类型定义
+interface RequestOptions extends RequestInit {
+  params?: Record<string, string | number>;
+}
+
+export async function request<T = any>(url: string, options: RequestOptions = {}): Promise<T> {
+  // 1. 处理 Token
+  const token = localStorage.getItem(TOKEN_KEY);
+  const headers = new Headers(options.headers);
+  
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  // 2. 处理 URL 参数
+  let fetchUrl = url;
+  if (options.params) {
+    const params = new URLSearchParams();
+    Object.entries(options.params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') {
+        params.append(k, String(v));
+      }
+    });
+    fetchUrl += `?${params.toString()}`;
+  }
+
+  // 3. 发起请求
+  try {
+    const response = await fetch(fetchUrl, {
+      ...options,
+      headers,
+    });
+
+    // 4. 处理 HTTP 错误状态
+    if (response.status === 401) {
+      // 未登录或 Token 过期
+      localStorage.removeItem(TOKEN_KEY);
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      throw new Error('未登录');
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throw new Error(errorBody.message || `请求失败: ${response.status}`);
+    }
+
+    // 5. 返回数据
+    return response.json();
+  } catch (error: any) {
+    // 全局错误提示 (除了 401 跳转外)
+    if (url !== '/api/auth/login') { // 登录页自己处理错误，不弹全局
+       message.error(error.message || '网络请求错误');
+    }
+    throw error;
+  }
+}
+
+================================================================================
+文件: src\App.tsx
+大小: 1221 字节
+================================================================================
+
+// src/App.tsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import BasicLayout from './layouts/BasicLayout';
+import LoginPage from './pages/Login';
+import DashboardPage from './pages/Dashboard';
+import UserListPage from './pages/UserList';
+
+// 简单的路由保护组件
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const token = localStorage.getItem('gw2_admin_token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <BasicLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* 默认跳转到 dashboard */}
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="users" element={<UserListPage />} />
+          <Route path="translations" element={<div>翻译管理页（待开发）</div>} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+================================================================================
+文件: src\main.tsx
+大小: 230 字节
+================================================================================
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+================================================================================
+文件: src\layouts\BasicLayout.tsx
+大小: 2682 字节
+================================================================================
+
+// src/layouts/BasicLayout.tsx
+import { ProLayout } from '@ant-design/pro-components';
+import { Dropdown, message } from 'antd';
+import { LogoutOutlined, UserOutlined, DashboardOutlined, TranslationOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { TOKEN_KEY } from '../services/request';
+
+// 优化菜单图标
+const routeConfig = {
+  route: {
+    path: '/',
+    routes: [
+      {
+        path: '/dashboard',
+        name: '仪表盘',
+        icon: <DashboardOutlined />,
+      },
+      {
+        path: '/users',
+        name: '用户管理',
+        icon: <UserOutlined />,
+      },
+      {
+        path: '/translations',
+        name: '翻译语料',
+        icon: <TranslationOutlined />,
+      },
+    ],
+  },
+};
+
+export default function BasicLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    message.success('已退出登录');
+    navigate('/login');
+  };
+
+  return (
+    <div style={{ height: '100vh' }}>
+      <ProLayout
+        title="GW2 Admin"
+        // 修复 Logo：使用 GW2 Wiki 的稳定图标，或者直接用 Emoji 🐶
+        logo="https://wiki.guildwars2.com/images/d/df/Gw2-logo.png" 
+        layout="mix"
+        splitMenus={false}
+        
+        // --- 增加以下 UI 增强配置 ---
+        fixSiderbar // 固定侧边栏
+        fixedHeader // 固定头部
+        siderWidth={220}
+        
+        // 设置主题色，深色侧边栏更像管理后台
+        navTheme="light" 
+        contentWidth="Fluid" // 流式布局，占满宽度
+        
+        location={{ pathname: location.pathname }}
+        route={routeConfig.route}
+        menuItemRender={(item, dom) => (
+          <div onClick={() => navigate(item.path || '/')}>{dom}</div>
+        )}
+        avatarProps={{
+          src: 'https://api.dicebear.com/7.x/miniavs/svg?seed=admin', // 使用 DiceBear 生成头像
+          size: 'small',
+          title: '管理员',
+          render: (props, dom) => (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'logout',
+                    icon: <LogoutOutlined />,
+                    label: '退出登录',
+                    onClick: handleLogout,
+                  },
+                ],
+              }}
+            >
+              <div style={{ cursor: 'pointer', padding: '0 8px' }}>{dom}</div>
+            </Dropdown>
+          ),
+        }}
+      >
+        <Outlet />
+      </ProLayout>
+    </div>
+  );
+}
+
+================================================================================
+文件: src\pages\Dashboard\index.tsx
+大小: 4547 字节
+================================================================================
+
+// src/pages/Dashboard/index.tsx
+import { PageContainer, StatisticCard } from '@ant-design/pro-components';
+import {
+  UserOutlined,
+  TranslationOutlined,
+  FireOutlined,
+  CloudServerOutlined,
+  FieldTimeOutlined,
+  FileTextOutlined
+} from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { request } from '../../services/request';
+
+const { Statistic, Divider } = StatisticCard;
+
+// 定义接口返回的数据类型
+type StatsData = {
+  users: { total: number; today: number };
+  translations: { count: number; usage: number };
+  content: { raid: number; pvp: number; directory: number };
+  system: { uptime: number; memory?: any };
+};
+
+// 辅助函数：将秒数格式化为更易读的时间
+function formatUptime(seconds: number) {
+  if (!seconds) return '-';
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (days > 0) return `${days}天 ${hours}小时`;
+  return `${hours}小时 ${minutes}分`;
+}
+
+export default function DashboardPage() {
+  const [data, setData] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 获取统计数据
+    request<StatsData>('/admin/stats')
+      .then((res) => {
+        setData(res);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  return (
+    <PageContainer 
+      title="仪表盘" 
+      subTitle="系统运行状态概览"
+      content={
+        <div style={{ color: '#666' }}>
+          欢迎管理员，今天是 {new Date().toLocaleDateString()}。
+        </div>
+      }
+    >
+      {/* 第一行：核心业务指标 */}
+      <StatisticCard.Group direction="row" loading={loading} style={{ marginBottom: 24 }}>
+        <StatisticCard
+          statistic={{
+            title: '总用户数',
+            value: data?.users.total || 0,
+            icon: <UserOutlined style={{ color: '#1890ff', fontSize: '24px' }} />,
+            description: (
+              <Statistic 
+                title="今日新增" 
+                value={data?.users.today || 0} 
+                trend={data?.users.today ? 'up' : undefined} 
+              />
+            ),
+          }}
+        />
+        <Divider />
+        <StatisticCard
+          statistic={{
+            title: '翻译接口调用',
+            value: data?.translations.usage || 0,
+            icon: <TranslationOutlined style={{ color: '#52c41a', fontSize: '24px' }} />,
+            description: (
+              <Statistic 
+                title="语料库条目" 
+                value={data?.translations.count || 0} 
+              />
+            ),
+          }}
+        />
+        <Divider />
+        <StatisticCard
+          statistic={{
+            title: '活跃招募 (Raid + PvP)',
+            value: (data?.content.raid || 0) + (data?.content.pvp || 0),
+            icon: <FireOutlined style={{ color: '#faad14', fontSize: '24px' }} />,
+          }}
+        />
+      </StatisticCard.Group>
+
+      {/* 第二行：内容详情与系统状态 */}
+      <StatisticCard.Group direction="row" loading={loading}>
+        <StatisticCard 
+          title="内容统计" 
+          colSpan={12} // 占据一半宽度
+          statistic={{
+            value: data?.content.directory || 0,
+            title: '资源黄页条目',
+            icon: <FileTextOutlined />,
+          }}
+          chart={
+            // 这里简单展示明细，如果引入了 Charts 库可以放图表
+            <div style={{ display: 'flex', gap: 32, marginTop: 16 }}>
+              <Statistic title="Raid 招募" value={data?.content.raid || 0} />
+              <Statistic title="PvP 招募" value={data?.content.pvp || 0} />
+            </div>
+          }
+        />
+        <Divider />
+        <StatisticCard 
+          title="系统状态" 
+          colSpan={12}
+          statistic={{
+            title: '运行时间',
+            value: formatUptime(data?.system.uptime || 0),
+            icon: <FieldTimeOutlined />,
+          }}
+          chart={
+            <div style={{ display: 'flex', gap: 16, marginTop: 16, alignItems: 'center' }}>
+               <CloudServerOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+               <span>服务运行正常 (Health: OK)</span>
+            </div>
+          }
+        />
+      </StatisticCard.Group>
+    </PageContainer>
+  );
+}
+
+================================================================================
+文件: src\pages\Login\index.tsx
+大小: 1745 字节
+================================================================================
+
+// src/pages/Login/index.tsx
+import { LoginForm, ProFormText } from '@ant-design/pro-components';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { message } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { request, TOKEN_KEY } from '../../services/request';
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (values: any) => {
+    try {
+      // 这里的 /api/auth/login 对应后端的路由
+      const res = await request<{ token: string; user: any }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(values),
+      });
+      
+      localStorage.setItem(TOKEN_KEY, res.token);
+      message.success('登录成功');
+      navigate('/');
+    } catch (error: any) {
+      message.error(error.message || '登录失败');
+    }
+  };
+
+  return (
+    <div style={{ height: '100vh', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <LoginForm
+        title="GW2 Admin"
+        subTitle="后端管理系统"
+        onFinish={handleSubmit}
+      >
+        <ProFormText
+          name="username"
+          fieldProps={{
+            size: 'large',
+            prefix: <UserOutlined />,
+          }}
+          placeholder="用户名: admin"
+          rules={[{ required: true, message: '请输入用户名' }]}
+        />
+        <ProFormText.Password
+          name="password"
+          fieldProps={{
+            size: 'large',
+            prefix: <LockOutlined />,
+          }}
+          placeholder="密码"
+          rules={[{ required: true, message: '请输入密码' }]}
+        />
+      </LoginForm>
+    </div>
+  );
+}
+
+================================================================================
+文件: src\pages\UserList\index.tsx
+大小: 6999 字节
+================================================================================
+
+// src/pages/UserList/index.tsx
+import { 
+  PageContainer, 
+  ProTable, 
+  type ProColumns, 
+  type ActionType,
+  ModalForm,
+  ProFormText,
+  ProFormSwitch
+} from '@ant-design/pro-components';
+import { Tag, Switch, message, Button, Popconfirm, Space } from 'antd';
+import { useRef, useState } from 'react';
+import { PlusOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { request } from '../../services/request';
+
+type UserItem = {
+  _id: string;
+  username: string;
+  isBanned: boolean;
+  isAdmin: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+};
+
+export default function UserListPage() {
+  const actionRef = useRef<ActionType>(null);
+  
+  // 控制“修改密码”弹窗的状态
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserItem | null>(null);
+
+  const columns: ProColumns<UserItem>[] = [
+    {
+      title: '用户名',
+      dataIndex: 'username',
+      copyable: true,
+      fieldProps: { placeholder: '输入用户名搜索' },
+    },
+    {
+      title: '状态',
+      dataIndex: 'isBanned',
+      valueType: 'select',
+      valueEnum: {
+        false: { text: '正常', status: 'Success' },
+        true: { text: '已封禁', status: 'Error' },
+      },
+      render: (_, record) => (
+        <Tag color={record.isBanned ? 'error' : 'success'}>
+          {record.isBanned ? '已封禁' : '正常'}
+        </Tag>
+      ),
+    },
+    {
+      title: '最后登录',
+      dataIndex: 'lastLoginAt',
+      valueType: 'dateTime',
+      search: false,
+      width: 170,
+    },
+    {
+      title: '注册时间',
+      dataIndex: 'createdAt',
+      valueType: 'dateTime',
+      search: false,
+      width: 170,
+    },
+    {
+      title: '操作',
+      key: 'action',
+      valueType: 'option',
+      width: 250, // 加宽一点以容纳按钮
+      render: (_, record) => (
+        <Space>
+          {/* 快速封禁开关 */}
+          <Switch
+            checkedChildren="封"
+            unCheckedChildren="正"
+            size="small"
+            checked={record.isBanned}
+            onChange={async (checked) => {
+              try {
+                await request(`/admin/users/${record._id}/ban`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ isBanned: checked }),
+                });
+                message.success('状态更新成功');
+                actionRef.current?.reload();
+              } catch (e) {}
+            }}
+          />
+
+          {/* 修改密码按钮 */}
+          <a
+            key="pwd"
+            onClick={() => {
+              setCurrentUser(record);
+              setPasswordModalVisible(true);
+            }}
+          >
+            <KeyOutlined /> 改密
+          </a>
+
+          {/* 删除确认按钮 */}
+          <Popconfirm
+            key="delete"
+            title="确定要删除该用户吗？"
+            description="此操作不可恢复！"
+            onConfirm={async () => {
+              try {
+                await request(`/admin/users/${record._id}`, { method: 'DELETE' });
+                message.success('用户已删除');
+                actionRef.current?.reload();
+              } catch (e) {}
+            }}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <a style={{ color: '#ff4d4f' }}>
+              <DeleteOutlined /> 删除
+            </a>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <PageContainer title="用户列表" subTitle="管理用户、权限及安全设置">
+      <ProTable<UserItem>
+        headerTitle="用户数据"
+        actionRef={actionRef}
+        rowKey="_id"
+        search={{
+          labelWidth: 'auto',
+        }}
+        cardBordered
+        // 工具栏：新增按钮
+        toolBarRender={() => [
+          <ModalForm
+            key="create-user"
+            title="新建用户"
+            trigger={
+              <Button type="primary" icon={<PlusOutlined />}>
+                新建用户
+              </Button>
+            }
+            width={400}
+            onFinish={async (values) => {
+              try {
+                await request('/admin/users', {
+                  method: 'POST',
+                  body: JSON.stringify(values),
+                });
+                message.success('用户创建成功');
+                actionRef.current?.reload();
+                return true; // 关闭弹窗
+              } catch (e) {
+                return false; // 保持弹窗开启
+              }
+            }}
+          >
+            <ProFormText
+              name="username"
+              label="用户名"
+              placeholder="请输入用户名"
+              rules={[{ required: true, message: '必填' }, { min: 4, message: '至少4个字符' }]}
+            />
+            <ProFormText.Password
+              name="password"
+              label="密码"
+              placeholder="请输入初始密码"
+              rules={[{ required: true, message: '必填' }, { min: 6, message: '至少6个字符' }]}
+            />
+            {/* 如果后端支持设置 isAdmin，可以在这里加开关 */}
+            {/* <ProFormSwitch name="isAdmin" label="设为管理员" /> */}
+          </ModalForm>
+        ]}
+        request={async (params) => {
+          const { current, pageSize, username } = params;
+          const res = await request('/admin/users', {
+            params: {
+              page: current || 1,
+              limit: pageSize || 20,
+              q: username || '',
+            },
+          });
+          return {
+            data: res.items,
+            success: true,
+            total: res.total,
+          };
+        }}
+        columns={columns}
+      />
+
+      {/* 修改密码的独立弹窗 */}
+      <ModalForm
+        title={`重置密码: ${currentUser?.username}`}
+        open={passwordModalVisible}
+        onOpenChange={setPasswordModalVisible}
+        width={400}
+        modalProps={{ destroyOnClose: true }}
+        onFinish={async (values) => {
+          if (!currentUser) return false;
+          try {
+            await request(`/admin/users/${currentUser._id}/password`, {
+              method: 'PUT',
+              body: JSON.stringify({ password: values.newPassword }),
+            });
+            message.success('密码修改成功');
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }}
+      >
+        <ProFormText.Password
+          name="newPassword"
+          label="新密码"
+          placeholder="请输入新密码"
+          rules={[{ required: true, message: '必填' }, { min: 6, message: '至少6个字符' }]}
+        />
+      </ModalForm>
+    </PageContainer>
+  );
+}
