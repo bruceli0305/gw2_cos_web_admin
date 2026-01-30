@@ -10,6 +10,10 @@ import {
   SafetyOutlined,
   FileSearchOutlined,
   TrophyOutlined,
+  DatabaseOutlined,
+  LinkOutlined,
+  AppstoreOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -23,6 +27,7 @@ type MeResp = {
     isSuper: boolean;
     roleNames: string[];
     permissions: string[];
+    mustChangePassword: boolean;
   };
 };
 
@@ -47,6 +52,14 @@ export default function BasicLayout() {
       .finally(() => setLoading(false));
   }, []);
 
+  // 强制改密：拉到 me 后立即跳
+  useEffect(() => {
+    if (!me) return;
+    if (me.mustChangePassword && location.pathname !== '/change-password') {
+      navigate('/change-password', { replace: true });
+    }
+  }, [me, location.pathname, navigate]);
+
   const hasPerm = (perm?: string) => {
     if (!perm) return true;
     if (!me) return false;
@@ -57,8 +70,10 @@ export default function BasicLayout() {
   const routeConfig = useMemo(() => {
     const raw: RouteItem[] = [
       { path: '/dashboard', name: '仪表盘', icon: <DashboardOutlined />, requiredPerm: 'dashboard.read' },
+
       { path: '/users', name: '用户管理', icon: <UserOutlined />, requiredPerm: 'users.read' },
       { path: '/translations', name: '翻译语料', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
+
       {
         path: '/content',
         name: '内容管理',
@@ -68,6 +83,19 @@ export default function BasicLayout() {
           { path: '/content/pvp', name: 'PvP 招募', icon: <TeamOutlined />, requiredPerm: 'pvp.read' },
         ],
       },
+
+      {
+        path: '/data',
+        name: '数据管理',
+        icon: <DatabaseOutlined />,
+        routes: [
+          { path: '/data/resources-directory', name: '资源黄页', icon: <AppstoreOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/resources-recommended', name: '推荐资源', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/legendary-blueprints', name: '传奇蓝图', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
+          { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+        ],
+      },
+
       {
         path: '/rbac',
         name: '权限管理',
@@ -77,6 +105,7 @@ export default function BasicLayout() {
           { path: '/rbac/roles', name: '角色管理', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
         ],
       },
+
       { path: '/audit', name: '审计日志', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
     ];
 
@@ -121,6 +150,8 @@ export default function BasicLayout() {
   return (
     <div style={{ height: '100vh' }}>
       <ProLayout
+        style={{ height: '100%' }}
+        contentStyle={{ overflow: 'auto' }}
         title="GW2 Admin"
         logo="https://wiki.guildwars2.com/images/d/df/Gw2-logo.png"
         layout="mix"
@@ -154,7 +185,18 @@ export default function BasicLayout() {
             <Dropdown
               menu={{
                 items: [
-                  { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: handleLogout },
+                  {
+                    key: 'changePassword',
+                    icon: <KeyOutlined />,
+                    label: '修改密码',
+                    onClick: () => navigate('/change-password'),
+                  },
+                  {
+                    key: 'logout',
+                    icon: <LogoutOutlined />,
+                    label: '退出登录',
+                    onClick: handleLogout,
+                  },
                 ],
               }}
             >

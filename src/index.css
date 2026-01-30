@@ -47,6 +47,17 @@ button {
   min-height: 100vh;
 }
 
+/* === 关键修复：让 ProLayout 内容区域可滚动，分页器就能看见 === */
+.ant-pro-layout .ant-layout-content,
+.ant-pro-layout-content {
+  overflow: auto;
+}
+
+/* PageContainer 在滚动容器内不要强行撑出额外高度 */
+.ant-pro-layout-content .ant-page-container {
+  min-height: auto;
+}
+
 /* 定义滚动条样式 (可选，为了更好看) */
 ::-webkit-scrollbar {
   width: 6px;

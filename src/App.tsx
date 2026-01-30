@@ -12,6 +12,13 @@ import RbacRolesPage from './pages/RbacRoles';
 import RbacAdminUsersPage from './pages/RbacAdminUsers';
 import AuditPage from './pages/Audit';
 
+import DataResourcesDirectoryPage from './pages/DataResourcesDirectory';
+import DataResourcesRecommendedPage from './pages/DataResourcesRecommended';
+import DataLegendaryBlueprintsPage from './pages/DataLegendaryBlueprints';
+import DataFractalDailiesPage from './pages/DataFractalDailies';
+
+import ChangePasswordPage from './pages/ChangePassword';
+
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('gw2_admin_token');
   if (!token) return <Navigate to="/login" replace />;
@@ -34,14 +41,21 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
 
+          <Route path="change-password" element={<ChangePasswordPage />} />
+
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="users" element={<UserListPage />} />
-
           <Route path="translations" element={<TranslationsPage />} />
 
           <Route path="content" element={<Navigate to="/content/raids" replace />} />
           <Route path="content/raids" element={<ContentRaidsPage />} />
           <Route path="content/pvp" element={<ContentPvpPage />} />
+
+          <Route path="data" element={<Navigate to="/data/resources-directory" replace />} />
+          <Route path="data/resources-directory" element={<DataResourcesDirectoryPage />} />
+          <Route path="data/resources-recommended" element={<DataResourcesRecommendedPage />} />
+          <Route path="data/legendary-blueprints" element={<DataLegendaryBlueprintsPage />} />
+          <Route path="data/fractal-dailies" element={<DataFractalDailiesPage />} />
 
           <Route path="rbac" element={<Navigate to="/rbac/admin-users" replace />} />
           <Route path="rbac/roles" element={<RbacRolesPage />} />

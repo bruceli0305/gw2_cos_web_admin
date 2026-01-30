@@ -19,7 +19,8 @@ export async function request<T = any>(url: string, options: RequestOptions = {}
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  const hasBody = options.body !== undefined && options.body !== null;
+  if (hasBody && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -50,6 +51,16 @@ export async function request<T = any>(url: string, options: RequestOptions = {}
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
+
+      // 强制改密：自动跳转
+      if (
+        response.status === 403 &&
+        errorBody?.message === '需要修改密码' &&
+        window.location.pathname !== '/change-password'
+      ) {
+        window.location.href = '/change-password';
+      }
+
       throw new Error(errorBody.message || `请求失败: ${response.status}`);
     }
 

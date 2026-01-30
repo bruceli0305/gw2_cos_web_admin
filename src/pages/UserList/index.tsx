@@ -1,15 +1,14 @@
-// src/pages/UserList/index.tsx
 import {
   PageContainer,
   ProTable,
   type ProColumns,
   type ActionType,
   ModalForm,
-  ProFormText
+  ProFormText,
 } from '@ant-design/pro-components';
-import { Tag, Switch, message, Popconfirm, Space } from 'antd';
+import { Tag, Switch, message, Button, Popconfirm, Space } from 'antd';
 import { useRef, useState } from 'react';
-import { DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import { request } from '../../services/request';
 
 type UserItem = {
@@ -24,8 +23,12 @@ type UserItem = {
 export default function UserListPage() {
   const actionRef = useRef<ActionType>(null);
 
+  // 修改密码弹窗
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserItem | null>(null);
+
+  // 新建用户弹窗
+  const [createOpen, setCreateOpen] = useState(false);
 
   const columns: ProColumns<UserItem>[] = [
     {
@@ -66,7 +69,7 @@ export default function UserListPage() {
       title: '操作',
       key: 'action',
       valueType: 'option',
-      width: 250,
+      width: 260,
       render: (_, record) => (
         <Space>
           <Switch
@@ -119,15 +122,20 @@ export default function UserListPage() {
   ];
 
   return (
-    <PageContainer title="用户列表" subTitle="管理用户、权限及安全设置">
+    <PageContainer title="用户列表" subTitle="管理前台用户">
       <ProTable<UserItem>
         headerTitle="用户数据"
         actionRef={actionRef}
         rowKey="_id"
         search={{ labelWidth: 'auto' }}
         cardBordered
+        toolBarRender={() => [
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            新建用户
+          </Button>,
+        ]}
         request={async (params) => {
-          const { current, pageSize, username } = params;
+          const { current, pageSize, username } = params as any;
           const res = await request('/admin/v1/users', {
             params: {
               page: current || 1,
@@ -135,11 +143,54 @@ export default function UserListPage() {
               q: username || '',
             },
           });
-          return { data: res.items, success: true, total: res.total };
+          return {
+            data: res.items,
+            success: true,
+            total: res.total,
+          };
         }}
         columns={columns}
       />
 
+      {/* 新建用户弹窗 */}
+      <ModalForm
+        title="新建前台用户"
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        width={420}
+        modalProps={{ destroyOnClose: true }}
+        onFinish={async (values) => {
+          try {
+            await request('/admin/v1/users', {
+              method: 'POST',
+              body: JSON.stringify({
+                username: values.username,
+                password: values.password,
+              }),
+            });
+            message.success('用户创建成功');
+            actionRef.current?.reload();
+            return true;
+          } catch {
+            return false;
+          }
+        }}
+      >
+        <ProFormText
+          name="username"
+          label="用户名"
+          placeholder="至少4个字符"
+          rules={[{ required: true, message: '必填' }, { min: 4, message: '至少4个字符' }]}
+        />
+        <ProFormText.Password
+          name="password"
+          label="初始密码"
+          placeholder="至少8个字符"
+          rules={[{ required: true, message: '必填' }, { min: 8, message: '至少8个字符' }]}
+        />
+      </ModalForm>
+
+      {/* 修改密码弹窗 */}
       <ModalForm
         title={`重置密码: ${currentUser?.username}`}
         open={passwordModalVisible}
@@ -163,8 +214,8 @@ export default function UserListPage() {
         <ProFormText.Password
           name="newPassword"
           label="新密码"
-          placeholder="请输入新密码"
-          rules={[{ required: true, message: '必填' }, { min: 6, message: '至少6个字符' }]}
+          placeholder="至少8个字符"
+          rules={[{ required: true, message: '必填' }, { min: 8, message: '至少8个字符' }]}
         />
       </ModalForm>
     </PageContainer>
