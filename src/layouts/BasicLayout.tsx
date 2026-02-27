@@ -73,6 +73,7 @@ export default function BasicLayout() {
 
       { path: '/users', name: '用户管理', icon: <UserOutlined />, requiredPerm: 'users.read' },
       { path: '/translations', name: '翻译语料', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
+      { path: '/slang', name: '黑话词典', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
 
       {
         path: '/content',
@@ -93,6 +94,8 @@ export default function BasicLayout() {
           { path: '/data/resources-recommended', name: '推荐资源', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
           { path: '/data/legendary-blueprints', name: '传奇蓝图', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
           { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-instabilities', name: '迷雾异变', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-rotations', name: '异变轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
         ],
       },
 

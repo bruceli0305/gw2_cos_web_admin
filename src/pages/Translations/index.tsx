@@ -1,4 +1,4 @@
-import { PageContainer, ProTable, type ProColumns, type ActionType, ModalForm, ProFormTextArea } from '@ant-design/pro-components';
+import { PageContainer, ProTable, type ProColumns, type ActionType, ModalForm, ProFormTextArea, ProFormSelect, ProFormSwitch } from '@ant-design/pro-components';
 import { Button, message, Popconfirm, Space, Tag } from 'antd';
 import { useRef, useState } from 'react';
 import { request } from '../../services/request';
@@ -19,6 +19,8 @@ export default function TranslationsPage() {
   const actionRef = useRef<ActionType>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [current, setCurrent] = useState<TranslationItem | null>(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
 
   const columns: ProColumns<TranslationItem>[] = [
     {
@@ -100,7 +102,15 @@ export default function TranslationsPage() {
   ];
 
   return (
-    <PageContainer title="翻译语料" subTitle="查看/修正/删除翻译缓存">
+    <PageContainer
+      title="翻译语料"
+      subTitle="查看/修正/删除翻译缓存（支持手动新增）"
+      extra={[
+        <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
+          新增语料
+        </Button>,
+      ]}
+    >
       <ProTable<TranslationItem>
         actionRef={actionRef}
         rowKey="_id"
@@ -142,6 +152,57 @@ export default function TranslationsPage() {
           label="译文"
           rules={[{ required: true, message: '必填' }]}
           fieldProps={{ rows: 6 }}
+        />
+      </ModalForm>
+
+      <ModalForm
+        title="新增翻译语料"
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        modalProps={{ destroyOnClose: true }}
+        initialValues={{ direction: 'EN_TO_CN', overwrite: true }}
+        onFinish={async (values) => {
+          await request('/admin/v1/translations', {
+            method: 'POST',
+            body: JSON.stringify({
+              direction: values.direction,
+              sourceText: values.sourceText,
+              translatedText: values.translatedText,
+              overwrite: values.overwrite,
+            }),
+          });
+          message.success('已保存');
+          actionRef.current?.reload();
+          return true;
+        }}
+      >
+        <ProFormSelect
+          name="direction"
+          label="方向"
+          valueEnum={{
+            CN_TO_EN: { text: '中→英' },
+            EN_TO_CN: { text: '英→中' },
+          }}
+          rules={[{ required: true, message: '必选' }]}
+        />
+
+        <ProFormTextArea
+          name="sourceText"
+          label="原文"
+          rules={[{ required: true, message: '必填' }]}
+          fieldProps={{ rows: 4 }}
+        />
+
+        <ProFormTextArea
+          name="translatedText"
+          label="译文"
+          rules={[{ required: true, message: '必填' }]}
+          fieldProps={{ rows: 6 }}
+        />
+
+        <ProFormSwitch
+          name="overwrite"
+          label="若已存在则覆盖"
         />
       </ModalForm>
     </PageContainer>

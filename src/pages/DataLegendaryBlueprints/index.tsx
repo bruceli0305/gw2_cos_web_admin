@@ -1,5 +1,5 @@
 import { PageContainer, ProTable, type ProColumns, type ActionType, ModalForm, ProFormTextArea } from '@ant-design/pro-components';
-import { Button, Modal, Tag, message, Space } from 'antd';
+import { Button, Modal, Tag, message, Space, Alert } from 'antd';
 import { useRef, useState } from 'react';
 import { request } from '../../services/request';
 
@@ -20,6 +20,11 @@ type Item = {
 export default function DataLegendaryBlueprintsPage() {
   const actionRef = useRef<ActionType>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [singleImportOpen, setSingleImportOpen] = useState(false);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string>('');
+  const [editingJsonText, setEditingJsonText] = useState<string>('');
 
   const [payloadOpen, setPayloadOpen] = useState(false);
   const [payload, setPayload] = useState<any>(null);
@@ -50,18 +55,31 @@ export default function DataLegendaryBlueprintsPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 120,
+      width: 180,
       render: (_, r) => (
-        <Button
-          type="link"
-          onClick={async () => {
-            const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`);
-            setPayload(res);
-            setPayloadOpen(true);
-          }}
-        >
-          查看JSON
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            onClick={async () => {
+              const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`);
+              setPayload(res);
+              setPayloadOpen(true);
+            }}
+          >
+            查看JSON
+          </Button>
+          <Button
+            type="link"
+            onClick={async () => {
+              const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`);
+              setEditingId(r.blueprintId);
+              setEditingJsonText(JSON.stringify(res, null, 2));
+              setEditOpen(true);
+            }}
+          >
+            编辑JSON
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -69,8 +87,11 @@ export default function DataLegendaryBlueprintsPage() {
   return (
     <PageContainer
       title="传奇蓝图"
-      subTitle="列表/查看/导入（覆盖）"
+      subTitle="列表/查看/单条导入与编辑覆盖/全量导入（危险）"
       extra={[
+        <Button key="singleImport" onClick={() => setSingleImportOpen(true)}>
+          导入单条（覆盖）
+        </Button>,
         <Button key="import" type="primary" onClick={() => setImportOpen(true)}>
           导入（覆盖）
         </Button>,
@@ -115,13 +136,65 @@ export default function DataLegendaryBlueprintsPage() {
         onOpenChange={setImportOpen}
         modalProps={{ destroyOnClose: true }}
         onFinish={async (values) => {
+          return new Promise<boolean>((resolve) => {
+            Modal.confirm({
+              title: '确认执行全量覆盖？',
+              content: '此操作会删除当前所有传奇蓝图后重新导入。建议先备份数据库。',
+              okText: '继续覆盖',
+              okButtonProps: { danger: true },
+              cancelText: '取消',
+              onOk: async () => {
+                try {
+                  const json = JSON.parse(values.jsonText || '');
+                  const res = await request('/admin/v1/data/legendary-blueprints/import', {
+                    method: 'POST',
+                    body: JSON.stringify(json),
+                  });
+                  message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
+                  actionRef.current?.reload();
+                  resolve(true);
+                } catch (e: any) {
+                  message.error(e?.message || 'JSON 解析/导入失败');
+                  resolve(false);
+                }
+              },
+              onCancel: () => resolve(false),
+            });
+          });
+        }}
+      >
+        <Alert
+          type="warning"
+          showIcon
+          message="危险操作"
+          description="该导入会清空所有传奇蓝图（deleteMany），再全量写入。除非你明确需要全量重建，否则请优先使用“导入单条（覆盖）”。"
+          style={{ marginBottom: 12 }}
+        />
+        <ProFormTextArea
+          name="jsonText"
+          label="JSON 内容"
+          placeholder="粘贴 JSON：可以是数组 []，或 { items: [] }"
+          fieldProps={{ rows: 14 }}
+          rules={[{ required: true, message: '请粘贴 JSON' }]}
+        />
+      </ModalForm>
+
+      <ModalForm
+        title="导入单条传奇蓝图（JSON，按 blueprintId 覆盖/新增）"
+        open={singleImportOpen}
+        onOpenChange={setSingleImportOpen}
+        modalProps={{ destroyOnClose: true }}
+        onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request('/admin/v1/data/legendary-blueprints/import', {
+            const res = await request('/admin/v1/data/legendary-blueprints/upsert', {
               method: 'POST',
               body: JSON.stringify(json),
             });
-            message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
+            message.success(`已${res.mode === 'insert' ? '新增' : '覆盖'}：${res.blueprintId}`);
+            if (Array.isArray(res.warnings) && res.warnings.length) {
+              message.warning(res.warnings.slice(0, 3).join('；'));
+            }
             actionRef.current?.reload();
             return true;
           } catch (e: any) {
@@ -132,10 +205,43 @@ export default function DataLegendaryBlueprintsPage() {
       >
         <ProFormTextArea
           name="jsonText"
-          label="JSON 内容"
-          placeholder="粘贴 JSON：可以是数组 []，或 { items: [] }"
+          label="单个蓝图 JSON"
+          placeholder="粘贴一个蓝图对象（必须包含 blueprintId）"
           fieldProps={{ rows: 14 }}
           rules={[{ required: true, message: '请粘贴 JSON' }]}
+        />
+      </ModalForm>
+
+      <ModalForm
+        title={`编辑蓝图 JSON（覆盖保存）${editingId ? `：${editingId}` : ''}`}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        modalProps={{ destroyOnClose: true }}
+        initialValues={{ jsonText: editingJsonText }}
+        onFinish={async (values) => {
+          try {
+            const json = JSON.parse(values.jsonText || '');
+            const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(editingId)}`, {
+              method: 'PUT',
+              body: JSON.stringify(json),
+            });
+            message.success(`已保存：${res.blueprintId}`);
+            if (Array.isArray(res.warnings) && res.warnings.length) {
+              message.warning(res.warnings.slice(0, 3).join('；'));
+            }
+            actionRef.current?.reload();
+            return true;
+          } catch (e: any) {
+            message.error(e?.message || 'JSON 解析/保存失败');
+            return false;
+          }
+        }}
+      >
+        <ProFormTextArea
+          name="jsonText"
+          label="蓝图 JSON"
+          fieldProps={{ rows: 16 }}
+          rules={[{ required: true, message: '必填' }]}
         />
       </ModalForm>
     </PageContainer>

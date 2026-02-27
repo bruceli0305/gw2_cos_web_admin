@@ -6,6 +6,7 @@ import DashboardPage from './pages/Dashboard';
 import UserListPage from './pages/UserList';
 
 import TranslationsPage from './pages/Translations';
+import SlangPage from './pages/Slang';
 import ContentRaidsPage from './pages/ContentRaids';
 import ContentPvpPage from './pages/ContentPvp';
 import RbacRolesPage from './pages/RbacRoles';
@@ -16,8 +17,11 @@ import DataResourcesDirectoryPage from './pages/DataResourcesDirectory';
 import DataResourcesRecommendedPage from './pages/DataResourcesRecommended';
 import DataLegendaryBlueprintsPage from './pages/DataLegendaryBlueprints';
 import DataFractalDailiesPage from './pages/DataFractalDailies';
+import DataMistlockInstabilitiesPage from './pages/DataMistlockInstabilities';
+import DataMistlockRotationsPage from './pages/DataMistlockRotations';
 
 import ChangePasswordPage from './pages/ChangePassword';
+import type { JSX } from 'react';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('gw2_admin_token');
@@ -46,6 +50,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="users" element={<UserListPage />} />
           <Route path="translations" element={<TranslationsPage />} />
+          <Route path="slang" element={<SlangPage />} />
 
           <Route path="content" element={<Navigate to="/content/raids" replace />} />
           <Route path="content/raids" element={<ContentRaidsPage />} />
@@ -56,6 +61,8 @@ function App() {
           <Route path="data/resources-recommended" element={<DataResourcesRecommendedPage />} />
           <Route path="data/legendary-blueprints" element={<DataLegendaryBlueprintsPage />} />
           <Route path="data/fractal-dailies" element={<DataFractalDailiesPage />} />
+          <Route path="data/mistlock-instabilities" element={<DataMistlockInstabilitiesPage />} />
+          <Route path="data/mistlock-rotations" element={<DataMistlockRotationsPage />} />
 
           <Route path="rbac" element={<Navigate to="/rbac/admin-users" replace />} />
           <Route path="rbac/roles" element={<RbacRolesPage />} />
