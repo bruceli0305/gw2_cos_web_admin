@@ -61,10 +61,24 @@ export async function request<T = any>(url: string, options: RequestOptions = {}
         window.location.href = '/change-password';
       }
 
-      throw new Error(errorBody.message || `请求失败: ${response.status}`);
+      const msg = String((errorBody as any)?.message || `请求失败: ${response.status}`);
+      throw new Error(msg);
     }
 
-    return response.json();
+    const body = await response.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      throw new Error('后端响应格式错误');
+    }
+
+    // 统一 envelope：{ statusCode, code, data }
+    const code = String((body as any).code || '').trim();
+    if (code && code !== '0') {
+      throw new Error(String((body as any).message || '请求错误'));
+    }
+    if (!('data' in (body as any))) {
+      throw new Error('后端响应缺少 data');
+    }
+    return (body as any).data as T;
   } catch (error: any) {
     if (!SILENT_ERROR_URLS.has(url)) {
       message.error(error.message || '网络请求错误');
