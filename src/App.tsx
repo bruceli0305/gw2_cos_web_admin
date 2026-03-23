@@ -8,10 +8,12 @@ import UserListPage from './pages/UserList';
 import TranslationsPage from './pages/Translations';
 import SlangPage from './pages/Slang';
 import ContentRaidsPage from './pages/ContentRaids';
-import ContentPvpPage from './pages/ContentPvp';
 import RbacRolesPage from './pages/RbacRoles';
 import RbacAdminUsersPage from './pages/RbacAdminUsers';
 import AuditPage from './pages/Audit';
+
+import WvwGuildsPage from './pages/WvwGuilds';
+import WvwGuildEditPage from './pages/WvwGuildEdit';
 
 import DataResourcesDirectoryPage from './pages/DataResourcesDirectory';
 import DataResourcesRecommendedPage from './pages/DataResourcesRecommended';
@@ -19,6 +21,8 @@ import DataLegendaryBlueprintsPage from './pages/DataLegendaryBlueprints';
 import DataFractalDailiesPage from './pages/DataFractalDailies';
 import DataMistlockInstabilitiesPage from './pages/DataMistlockInstabilities';
 import DataMistlockRotationsPage from './pages/DataMistlockRotations';
+import DataMarketWatchPage from './pages/DataMarketWatch';
+import DataGw2ApiPage from './pages/DataGw2Api';
 
 import ChangePasswordPage from './pages/ChangePassword';
 import type { JSX } from 'react';
@@ -54,7 +58,6 @@ function App() {
 
           <Route path="content" element={<Navigate to="/content/raids" replace />} />
           <Route path="content/raids" element={<ContentRaidsPage />} />
-          <Route path="content/pvp" element={<ContentPvpPage />} />
 
           <Route path="data" element={<Navigate to="/data/resources-directory" replace />} />
           <Route path="data/resources-directory" element={<DataResourcesDirectoryPage />} />
@@ -63,12 +66,17 @@ function App() {
           <Route path="data/fractal-dailies" element={<DataFractalDailiesPage />} />
           <Route path="data/mistlock-instabilities" element={<DataMistlockInstabilitiesPage />} />
           <Route path="data/mistlock-rotations" element={<DataMistlockRotationsPage />} />
+          <Route path="data/gw2-api" element={<DataGw2ApiPage />} />
+          <Route path="data/market-watch" element={<DataMarketWatchPage />} />
 
           <Route path="rbac" element={<Navigate to="/rbac/admin-users" replace />} />
           <Route path="rbac/roles" element={<RbacRolesPage />} />
           <Route path="rbac/admin-users" element={<RbacAdminUsersPage />} />
 
           <Route path="audit" element={<AuditPage />} />
+
+          <Route path="wvw-guilds" element={<WvwGuildsPage />} />
+          <Route path="wvw-guilds/:id" element={<WvwGuildEditPage />} />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

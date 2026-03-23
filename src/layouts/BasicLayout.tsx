@@ -14,6 +14,8 @@ import {
   LinkOutlined,
   AppstoreOutlined,
   KeyOutlined,
+  FlagOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -81,9 +83,10 @@ export default function BasicLayout() {
         icon: <TeamOutlined />,
         routes: [
           { path: '/content/raids', name: 'Raid 招募', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
-          { path: '/content/pvp', name: 'PvP 招募', icon: <TeamOutlined />, requiredPerm: 'pvp.read' },
         ],
       },
+
+      { path: '/wvw-guilds', name: 'WvW 工会招募', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
 
       {
         path: '/data',
@@ -96,6 +99,10 @@ export default function BasicLayout() {
           { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
           { path: '/data/mistlock-instabilities', name: '迷雾异变', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
           { path: '/data/mistlock-rotations', name: '异变轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+
+          { path: '/data/gw2-api', name: 'GW2 官方数据', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
+
+          { path: '/data/market-watch', name: '交易所监控', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
         ],
       },
 
