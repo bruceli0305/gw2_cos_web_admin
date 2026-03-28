@@ -1,19 +1,143 @@
 import {
   PageContainer,
-  ProForm,
+  ProCard,
+} from '@ant-design/pro-components';
+import {
   ProFormText,
   ProFormTextArea,
   ProFormSelect,
   ProFormSwitch,
   ProFormList,
-  ProCard,
-} from '@ant-design/pro-components';
+} from '@ant-design/pro-form';
+import { ProForm } from '@ant-design/pro-form/es/layouts/ProForm';
 import { Button, message, Spin } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { request } from '../../services/request';
 
-type Doc = any;
+type FaqItem = {
+  q?: string;
+  a?: string;
+};
+
+type ScheduleItem = {
+  day?: string;
+  cet?: string;
+  bj?: string;
+  note?: string;
+};
+
+type JoinStepItem = Record<string, unknown>;
+
+type OperationCard = {
+  title?: string;
+  bullets?: string[];
+};
+
+type OperationCardFormItem = {
+  title?: string;
+  bulletsText?: unknown;
+};
+
+type PageDoc = {
+  heroPoem?: string;
+  heroIntro?: string;
+  sideCardTag?: string;
+  sideCardBlurb?: string;
+  sideCardMetaVoice?: string;
+  sideCardMetaReply?: string;
+  introTemplate?: string;
+  operationTitle?: string;
+  operationDesc?: string;
+  operationCards?: OperationCard[];
+  provideBullets?: string[];
+  needBullets?: string[];
+  joinTitle?: string;
+  joinDesc?: string;
+  joinSteps?: JoinStepItem[];
+  footerAbout?: string;
+  footerTip?: string;
+  footerDisclaimerTitle?: string;
+  footerDisclaimer?: string;
+};
+
+type Doc = {
+  slug?: string;
+  name?: string;
+  tag?: string;
+  region?: string;
+  server?: string;
+  summary?: string;
+  isRecruiting?: boolean;
+  playStyle?: string;
+  language?: string;
+  primeTimeCET?: string;
+  primeTimeBJ?: string;
+  voicePlatform?: string;
+  voiceInvite?: string;
+  recruiters?: string[];
+  gameIds?: string[];
+  tags?: string[];
+  regionLabel?: string;
+  serverOrAlliance?: string;
+  highlights?: string[];
+  requirementsMust?: string[];
+  requirementsExpect?: string[];
+  requirementsNotFit?: string[];
+  schedule?: ScheduleItem[];
+  faq?: FaqItem[];
+  page?: PageDoc;
+};
+
+type PageFormValues = {
+  heroPoem?: string;
+  heroIntro?: string;
+  sideCardTag?: string;
+  sideCardBlurb?: string;
+  sideCardMetaVoice?: string;
+  sideCardMetaReply?: string;
+  introTemplate?: string;
+  operationTitle?: string;
+  operationDesc?: string;
+  operationCards?: OperationCardFormItem[];
+  provideBulletsText?: unknown;
+  needBulletsText?: unknown;
+  joinTitle?: string;
+  joinDesc?: string;
+  joinSteps?: JoinStepItem[];
+  footerAbout?: string;
+  footerTip?: string;
+  footerDisclaimerTitle?: string;
+  footerDisclaimer?: string;
+};
+
+type FormValues = {
+  slug?: string;
+  name?: string;
+  tag?: string;
+  region?: string;
+  server?: string;
+  summary?: string;
+  isRecruiting?: boolean;
+  playStyle?: string;
+  language?: string;
+  primeTimeCET?: string;
+  primeTimeBJ?: string;
+  voicePlatform?: string;
+  voiceInvite?: string;
+  recruitersText?: unknown;
+  gameIdsText?: unknown;
+  tags?: string[];
+  regionLabel?: string;
+  serverOrAlliance?: string;
+  highlightsText?: unknown;
+  requirementsMustText?: unknown;
+  requirementsExpectText?: unknown;
+  requirementsNotFitText?: unknown;
+  schedule?: ScheduleItem[];
+  faq?: FaqItem[];
+  page?: PageFormValues;
+};
 
 function arrayToLines(v: unknown): string {
   if (!Array.isArray(v)) return '';
@@ -32,7 +156,7 @@ function linesToArray(v: unknown): string[] {
 }
 
 function validateLines(min: number, max: number, label: string) {
-  return async (_: any, v: any) => {
+  return async (_: unknown, v: unknown) => {
     const arr = linesToArray(v);
     if (arr.length < min) throw new Error(`${label}至少填写 ${min} 项`);
     if (arr.length > max) throw new Error(`${label}最多填写 ${max} 项`);
@@ -48,11 +172,26 @@ export default function WvwGuildEditPage() {
   const [doc, setDoc] = useState<Doc | null>(null);
 
   useEffect(() => {
-    if (isCreate) return;
-    setLoading(true);
-    request(`/admin/v1/wvw-guilds/${id}`)
-      .then((d) => setDoc(d))
-      .finally(() => setLoading(false));
+    if (isCreate || !id) return;
+
+    let active = true;
+
+    async function loadDoc() {
+      try {
+        const nextDoc = await request<Doc>(`/admin/v1/wvw-guilds/${id}`);
+        if (active) setDoc(nextDoc);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadDoc().catch(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [id, isCreate]);
 
   const initialValues = useMemo(() => {
@@ -136,9 +275,9 @@ export default function WvwGuildEditPage() {
         provideBulletsText: arrayToLines(page?.provideBullets),
         needBulletsText: arrayToLines(page?.needBullets),
         operationCards: Array.isArray(page?.operationCards)
-          ? page.operationCards.map((c: any) => ({
-              title: c.title,
-              bulletsText: arrayToLines(c.bullets),
+          ? page.operationCards.map((card: OperationCard) => ({
+              title: card.title,
+              bulletsText: arrayToLines(card.bullets),
             }))
           : [],
       },
@@ -162,14 +301,14 @@ export default function WvwGuildEditPage() {
         </Button>,
       ]}
     >
-      <ProForm
+      <ProForm<FormValues>
         initialValues={initialValues}
         submitter={{
           searchConfig: { submitText: '保存' },
           resetButtonProps: false,
         }}
         onFinish={async (values) => {
-          const payload: any = {
+          const payload = {
             slug: String(values.slug || '').trim(),
             name: String(values.name || '').trim(),
             tag: String(values.tag || '').trim(),
@@ -208,9 +347,9 @@ export default function WvwGuildEditPage() {
               operationTitle: String(values?.page?.operationTitle || '').trim(),
               operationDesc: String(values?.page?.operationDesc || '').trim(),
               operationCards: Array.isArray(values?.page?.operationCards)
-                ? values.page.operationCards.map((c: any) => ({
-                    title: String(c?.title || '').trim(),
-                    bullets: linesToArray(c?.bulletsText),
+                ? values.page.operationCards.map((card: OperationCardFormItem) => ({
+                    title: String(card?.title || '').trim(),
+                    bullets: linesToArray(card?.bulletsText),
                   }))
                 : [],
               provideBullets: linesToArray(values?.page?.provideBulletsText),

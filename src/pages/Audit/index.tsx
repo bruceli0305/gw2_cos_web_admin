@@ -1,7 +1,11 @@
-import { PageContainer, ProTable, type ProColumns, type ActionType } from '@ant-design/pro-components';
+import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
 import { useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { getErrorMessage, request } from '../../services/request';
+
+type AuditDetail = Record<string, unknown> | null;
 
 type AuditItem = {
   _id: string;
@@ -11,79 +15,119 @@ type AuditItem = {
   resourceId?: string;
   ip?: string;
   ua?: string;
-  detail?: any;
+  detail?: AuditDetail;
   createdAt: string;
+};
+
+type AuditQueryParams = {
+  current?: number;
+  pageSize?: number;
+  action?: string;
+  resourceType?: string;
+  adminUserId?: string;
+  from?: string;
+  to?: string;
+};
+
+type AuditRangeValue = [string | undefined, string | undefined] | undefined;
+
+type AuditListResponse = {
+  items: AuditItem[];
+  total: number;
 };
 
 export default function AuditPage() {
   const actionRef = useRef<ActionType>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [detail, setDetail] = useState<any>(null);
+  const [detail, setDetail] = useState<AuditDetail>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasFilters, setHasFilters] = useState(false);
+  const tableState = getFilterAwareTableProps({
+    hasFilters,
+    searchText: 'Apply filters',
+    filteredEmptyText: 'No audit logs match the current filters.',
+    emptyText: 'No audit logs yet. New admin write operations will appear here.',
+  });
 
   const columns: ProColumns<AuditItem>[] = [
-    { title: 'action', dataIndex: 'action', hideInTable: true },
-    { title: 'resourceType', dataIndex: 'resourceType', hideInTable: true },
-    { title: 'adminUserId', dataIndex: 'adminUserId', hideInTable: true },
+    { title: 'Action', dataIndex: 'action', hideInTable: true },
+    { title: 'Resource Type', dataIndex: 'resourceType', hideInTable: true },
+    { title: 'Admin User ID', dataIndex: 'adminUserId', hideInTable: true },
     {
-      title: '时间范围',
+      title: 'Created Range',
       dataIndex: 'createdAtRange',
       valueType: 'dateTimeRange',
       hideInTable: true,
       search: {
-        transform: (v: any) => ({ from: v?.[0], to: v?.[1] }),
+        transform: (value?: AuditRangeValue) => ({ from: value?.[0], to: value?.[1] }),
       },
     },
-
-    { title: '时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
-    { title: '管理员', dataIndex: 'adminUsername', width: 140, search: false },
-    { title: '动作', dataIndex: 'action', width: 180, search: false },
-    { title: '资源', dataIndex: 'resourceType', width: 120, search: false },
-    { title: '资源ID', dataIndex: 'resourceId', width: 220, search: false, ellipsis: true },
+    { title: 'Created At', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
+    { title: 'Admin', dataIndex: 'adminUsername', width: 140, search: false },
+    { title: 'Action', dataIndex: 'action', width: 180, search: false },
+    { title: 'Resource', dataIndex: 'resourceType', width: 120, search: false },
+    { title: 'Resource ID', dataIndex: 'resourceId', width: 220, search: false, ellipsis: true },
     { title: 'IP', dataIndex: 'ip', width: 140, search: false },
     {
-      title: '详情',
+      title: 'Detail',
       valueType: 'option',
       width: 120,
-      render: (_, r) => (
+      render: (_, record) => (
         <Button
           type="link"
           onClick={() => {
-            setDetail(r.detail || null);
+            setDetail(record.detail || null);
             setDetailOpen(true);
           }}
         >
-          查看
+          View
         </Button>
       ),
     },
   ];
 
   return (
-    <PageContainer title="审计日志" subTitle="追踪管理端写操作">
+    <PageContainer title="Audit Logs" subTitle="Track administrative write operations">
+      <PageRequestErrorAlert
+        message="Unable to load audit logs"
+        description={errorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<AuditItem>
         actionRef={actionRef}
         rowKey="_id"
         columns={columns}
         cardBordered
+        {...tableState}
         request={async (params) => {
-          const { current, pageSize, action, resourceType, adminUserId, from, to } = params as any;
-          const res = await request('/admin/v1/audit', {
-            params: {
-              page: current || 1,
-              limit: pageSize || 20,
-              action: action || '',
-              resourceType: resourceType || '',
-              adminUserId: adminUserId || '',
-              from: from || '',
-              to: to || '',
-            },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const query = params as AuditQueryParams;
+
+          setHasFilters(Boolean(query.action || query.resourceType || query.adminUserId || query.from || query.to));
+
+          try {
+            const res = await request<AuditListResponse>('/admin/v1/audit', {
+              params: {
+                page: query.current || 1,
+                limit: query.pageSize || 20,
+                action: query.action || '',
+                resourceType: query.resourceType || '',
+                adminUserId: query.adminUserId || '',
+                from: query.from || '',
+                to: query.to || '',
+              },
+            });
+            setErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setErrorMessage(getErrorMessage(error, 'Failed to load audit logs'));
+            throw error;
+          }
         }}
       />
 
       <Modal
-        title="审计详情"
+        title="Audit Detail"
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         onOk={() => setDetailOpen(false)}

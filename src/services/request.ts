@@ -1,17 +1,47 @@
-// src/services/request.ts
-import { message } from 'antd';
-
 export const TOKEN_KEY = 'gw2_admin_token';
 
 interface RequestOptions extends RequestInit {
-  params?: Record<string, string | number>;
+  params?: Record<string, string | number | boolean | null | undefined>;
 }
+
+type ApiEnvelope<T> = {
+  code?: string | number;
+  message?: string;
+  data?: T;
+};
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+type LegacyApiResult = any;
 
 const SILENT_ERROR_URLS = new Set([
   '/admin/v1/auth/login',
 ]);
 
-export async function request<T = any>(url: string, options: RequestOptions = {}): Promise<T> {
+let messageApiPromise: Promise<typeof import('antd')['message']> | null = null;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export function getErrorMessage(error: unknown, fallback = 'Network request failed') {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+  return fallback;
+}
+
+async function notifyRequestError(content: string) {
+  try {
+    if (!messageApiPromise) {
+      messageApiPromise = import('antd').then((mod) => mod.message);
+    }
+    const messageApi = await messageApiPromise;
+    messageApi.error(content);
+  } catch {
+    console.error(content);
+  }
+}
+
+export async function request<T = LegacyApiResult>(url: string, options: RequestOptions = {}): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers = new Headers(options.headers);
 
@@ -27,9 +57,9 @@ export async function request<T = any>(url: string, options: RequestOptions = {}
   let fetchUrl = url;
   if (options.params) {
     const params = new URLSearchParams();
-    Object.entries(options.params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') {
-        params.append(k, String(v));
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
       }
     });
     fetchUrl += `?${params.toString()}`;
@@ -46,42 +76,45 @@ export async function request<T = any>(url: string, options: RequestOptions = {}
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
-      throw new Error('未登录');
+      throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
+      const errorBody = await response.json().catch(() => null);
+      const errorMessage =
+        isRecord(errorBody) && typeof errorBody.message === 'string'
+          ? errorBody.message
+          : `Request failed: ${response.status}`;
 
-      // 强制改密：自动跳转
       if (
         response.status === 403 &&
-        errorBody?.message === '需要修改密码' &&
+        errorMessage === 'Password change required' &&
         window.location.pathname !== '/change-password'
       ) {
         window.location.href = '/change-password';
       }
 
-      const msg = String((errorBody as any)?.message || `请求失败: ${response.status}`);
-      throw new Error(msg);
+      throw new Error(errorMessage);
     }
 
     const body = await response.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      throw new Error('后端响应格式错误');
+    if (!isRecord(body)) {
+      throw new Error('Invalid response format');
     }
 
-    // 统一 envelope：{ statusCode, code, data }
-    const code = String((body as any).code || '').trim();
+    const envelope = body as ApiEnvelope<T>;
+    const code = String(envelope.code || '').trim();
     if (code && code !== '0') {
-      throw new Error(String((body as any).message || '请求错误'));
+      throw new Error(String(envelope.message || 'Request failed'));
     }
-    if (!('data' in (body as any))) {
-      throw new Error('后端响应缺少 data');
+    if (!('data' in body)) {
+      throw new Error('Response missing data');
     }
-    return (body as any).data as T;
-  } catch (error: any) {
+
+    return envelope.data as T;
+  } catch (error: unknown) {
     if (!SILENT_ERROR_URLS.has(url)) {
-      message.error(error.message || '网络请求错误');
+      void notifyRequestError(getErrorMessage(error));
     }
     throw error;
   }

@@ -7,9 +7,10 @@ import {
   ProFormSelect,
   ProFormSwitch,
 } from '@ant-design/pro-components';
-import { Button, Modal, Space, message, Select, Tag } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { Alert, Button, Modal, Select, Space, Tag, message } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { runSafeFollowUp } from '../../services/followUp';
+import { getErrorMessage, request } from '../../services/request';
 
 type EntityItem = {
   _id: string;
@@ -34,118 +35,194 @@ type SyncState = {
   updatedAt: string;
 };
 
+type Language = 'zh' | 'en';
+
+type TableRequestParams = {
+  current?: number;
+  pageSize?: number;
+  q?: string;
+};
+
+type EntityListResponse = {
+  items: EntityItem[];
+  total: number;
+};
+
+type SyncStatesResponse = {
+  items: SyncState[];
+};
+
+type SyncResponse = {
+  results?: Array<{ type?: string }>;
+};
+
+type SyncFormValues = {
+  lang: Language;
+  prune?: boolean;
+  types?: string[];
+};
+
 export default function DataGw2ApiPage() {
   const actionRef = useRef<ActionType>(null);
 
   const [types, setTypes] = useState<string[]>([]);
   const [type, setType] = useState<string>('professions');
-  const [lang, setLang] = useState<'zh' | 'en'>('zh');
+  const [lang, setLang] = useState<Language>('zh');
+  const [typesErrorMessage, setTypesErrorMessage] = useState<string | null>(null);
+  const [syncStatesErrorMessage, setSyncStatesErrorMessage] = useState<string | null>(null);
+  const [tableErrorMessage, setTableErrorMessage] = useState<string | null>(null);
+  const [hasSearch, setHasSearch] = useState(false);
 
   const [syncOpen, setSyncOpen] = useState(false);
   const [syncStates, setSyncStates] = useState<SyncState[]>([]);
 
   const [payloadOpen, setPayloadOpen] = useState(false);
-  const [payload, setPayload] = useState<any>(null);
+  const [payload, setPayload] = useState<unknown>(null);
 
-  useEffect(() => {
-    request<{ items: string[] }>('/admin/v1/data/gw2-api/types')
-      .then((res) => {
-        const list = res.items || [];
-        setTypes(list);
-        if (list.length && !list.includes(type)) setType(list[0]);
-      })
-      .catch(() => {
-        setTypes([]);
-      });
+  const fetchTypes = useCallback(async () => {
+    const res = await request<{ items: string[] }>('/admin/v1/data/gw2-api/types');
+    return res.items || [];
   }, []);
 
-  const refreshStates = async (nextLang = lang) => {
-    try {
-      const res = await request<{ items: SyncState[] }>('/admin/v1/data/gw2-api/sync-states', {
-        params: { lang: nextLang },
-      });
-      setSyncStates(res.items || []);
-    } catch {
-      setSyncStates([]);
-    }
-  };
+  const loadTypes = useCallback(async () => {
+    const nextTypes = await fetchTypes();
+    setTypes(nextTypes);
+    setType((currentType) => (nextTypes.length && !nextTypes.includes(currentType) ? nextTypes[0] : currentType));
+    setTypesErrorMessage(null);
+    return nextTypes;
+  }, [fetchTypes]);
+
+  const fetchSyncStates = useCallback(async (nextLang: Language) => {
+    const res = await request<SyncStatesResponse>('/admin/v1/data/gw2-api/sync-states', {
+      params: { lang: nextLang },
+    });
+    return res.items || [];
+  }, []);
+
+  const refreshStates = useCallback(async (nextLang: Language) => {
+    const nextStates = await fetchSyncStates(nextLang);
+    setSyncStates(nextStates);
+    setSyncStatesErrorMessage(null);
+    return nextStates;
+  }, [fetchSyncStates]);
 
   useEffect(() => {
-    refreshStates(lang);
-  }, [lang]);
+    let active = true;
 
-  const typeOptions = useMemo(() => (types || []).map((t) => ({ label: t, value: t })), [types]);
+    async function loadInitialTypes() {
+      try {
+        const nextTypes = await fetchTypes();
+        if (!active) return;
+        setTypes(nextTypes);
+        setType((currentType) => (nextTypes.length && !nextTypes.includes(currentType) ? nextTypes[0] : currentType));
+        setTypesErrorMessage(null);
+      } catch (error: unknown) {
+        if (active) {
+          setTypesErrorMessage(getErrorMessage(error, 'Failed to load GW2 API entity types'));
+        }
+      }
+    }
+
+    void loadInitialTypes();
+
+    return () => {
+      active = false;
+    };
+  }, [fetchTypes]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadStates() {
+      try {
+        const nextStates = await fetchSyncStates(lang);
+        if (active) setSyncStates(nextStates);
+        if (active) setSyncStatesErrorMessage(null);
+      } catch (error: unknown) {
+        if (active) {
+          setSyncStatesErrorMessage(getErrorMessage(error, 'Failed to load sync status'));
+        }
+      }
+    }
+
+    void loadStates();
+    return () => {
+      active = false;
+    };
+  }, [fetchSyncStates, lang]);
+
+  const typeOptions = useMemo(() => types.map((item) => ({ label: item, value: item })), [types]);
 
   const stateMap = useMemo(() => {
-    const m = new Map<string, SyncState>();
-    for (const s of syncStates) m.set(s.type, s);
-    return m;
+    const nextStateMap = new Map<string, SyncState>();
+    for (const item of syncStates) nextStateMap.set(item.type, item);
+    return nextStateMap;
   }, [syncStates]);
 
   const currentState = stateMap.get(type);
 
   const columns: ProColumns<EntityItem>[] = [
-    { title: '关键词', dataIndex: 'q', hideInTable: true },
-
+    { title: 'Keyword', dataIndex: 'q', hideInTable: true },
     { title: 'GW2 ID', dataIndex: 'gw2Id', width: 160, copyable: true },
-    { title: '名称', dataIndex: 'name', ellipsis: true },
-    { title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
+    { title: 'Name', dataIndex: 'name', ellipsis: true },
+    { title: 'Updated At', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 120,
-      render: (_, r) => (
+      render: (_, record) => (
         <Button
           type="link"
           onClick={async () => {
-            const res = await request(`/admin/v1/data/gw2-api/entities/${encodeURIComponent(type)}/${encodeURIComponent(r.gw2Id)}`,
-              { params: { lang } }
+            const res = await request<unknown>(
+              `/admin/v1/data/gw2-api/entities/${encodeURIComponent(type)}/${encodeURIComponent(record.gw2Id)}`,
+              { params: { lang } },
             );
-            setPayload(res?.data ?? res);
+            setPayload(res);
             setPayloadOpen(true);
           }}
         >
-          查看JSON
+          View JSON
         </Button>
       ),
     },
   ];
 
-  const statusTag = (s?: SyncState) => {
-    if (!s) return null;
-    if (s.status === 'running') return <Tag color="processing">同步中</Tag>;
-    if (s.status === 'success') return <Tag color="success">已同步</Tag>;
-    if (s.status === 'error') return <Tag color="error">同步失败</Tag>;
-    return <Tag>未知</Tag>;
-  };
+  function renderStatusTag(state?: SyncState) {
+    if (!state) return null;
+    if (state.status === 'running') return <Tag color="processing">Running</Tag>;
+    if (state.status === 'success') return <Tag color="success">Success</Tag>;
+    if (state.status === 'error') return <Tag color="error">Error</Tag>;
+    return <Tag>Idle</Tag>;
+  }
 
   return (
     <PageContainer
-      title="GW2 官方数据"
-      subTitle="从 api.guildwars2.com 拉取并入库（可多语言），用于 Build Editor 等功能"
+      title="GW2 API Data"
+      subTitle="Sync official GW2 data into the admin database for downstream tooling."
       extra={[
         <Space key="controls">
-          <span>语言：</span>
-          <Select
+          <span>Language:</span>
+          <Select<Language>
             value={lang}
             style={{ width: 120 }}
             options={[
-              { label: '中文(zh)', value: 'zh' },
-              { label: 'English(en)', value: 'en' },
+              { label: 'Chinese (zh)', value: 'zh' },
+              { label: 'English (en)', value: 'en' },
             ]}
-            onChange={(v) => {
-              setLang(v);
+            onChange={(value) => {
+              setLang(value);
               actionRef.current?.reload();
             }}
           />
 
-          <span>类型：</span>
+          <span>Type:</span>
           <Select
             value={type}
-            style={{ width: 200 }}
+            style={{ width: 220 }}
             options={typeOptions}
-            onChange={(v) => {
-              setType(v);
+            onChange={(value) => {
+              setType(value);
               actionRef.current?.reload();
             }}
           />
@@ -154,35 +231,80 @@ export default function DataGw2ApiPage() {
             type="primary"
             onClick={async () => {
               try {
-                message.loading({ content: '正在同步，请稍候…', key: 'sync' });
-                const res = await request('/admin/v1/data/gw2-api/sync', {
+                message.loading({ content: 'Sync in progress...', key: 'sync' });
+                const res = await request<SyncResponse>('/admin/v1/data/gw2-api/sync', {
                   method: 'POST',
                   body: JSON.stringify({ types: [type], lang, prune: true }),
                 });
-                message.success({ content: `同步完成：${res?.results?.[0]?.type || type}`, key: 'sync' });
-                refreshStates(lang);
+                message.success({ content: `Sync completed: ${res.results?.[0]?.type || type}`, key: 'sync' });
+                await runSafeFollowUp(() => refreshStates(lang));
                 actionRef.current?.reload();
-              } catch (e: any) {
-                message.error({ content: e?.message || '同步失败', key: 'sync' });
-                refreshStates(lang);
+              } catch (error: unknown) {
+                message.error({ content: getErrorMessage(error, 'Sync failed'), key: 'sync' });
+                await runSafeFollowUp(() => refreshStates(lang));
               }
             }}
           >
-            同步当前类型
+            Sync Current Type
           </Button>
 
-          <Button onClick={() => setSyncOpen(true)}>高级同步…</Button>
+          <Button onClick={() => setSyncOpen(true)}>Advanced Sync</Button>
         </Space>,
       ]}
     >
+      {typesErrorMessage ? (
+        <Alert
+          showIcon
+          type="error"
+          style={{ marginBottom: 16 }}
+          message="Unable to load GW2 API entity types"
+          description={typesErrorMessage}
+          action={(
+            <Button size="small" onClick={() => void loadTypes().catch(() => undefined)}>
+              Retry
+            </Button>
+          )}
+        />
+      ) : null}
+
+      {syncStatesErrorMessage ? (
+        <Alert
+          showIcon
+          type="error"
+          style={{ marginBottom: 16 }}
+          message="Unable to load sync status"
+          description={syncStatesErrorMessage}
+          action={(
+            <Button size="small" onClick={() => void refreshStates(lang).catch(() => undefined)}>
+              Retry
+            </Button>
+          )}
+        />
+      ) : null}
+
+      {tableErrorMessage ? (
+        <Alert
+          showIcon
+          type="error"
+          style={{ marginBottom: 16 }}
+          message="Unable to load GW2 API entities"
+          description={tableErrorMessage}
+          action={(
+            <Button size="small" onClick={() => actionRef.current?.reload()}>
+              Retry
+            </Button>
+          )}
+        />
+      ) : null}
+
       <div style={{ marginBottom: 12 }}>
         <Space wrap>
-          {statusTag(currentState)}
+          {renderStatusTag(currentState)}
           {typeof currentState?.buildId === 'number' ? <Tag>build: {currentState.buildId}</Tag> : null}
           {typeof currentState?.itemsTotal === 'number' ? <Tag>total: {currentState.itemsTotal}</Tag> : null}
           {typeof currentState?.itemsUpserted === 'number' ? <Tag>changed: {currentState.itemsUpserted}</Tag> : null}
           {typeof currentState?.itemsDeleted === 'number' ? <Tag>deleted: {currentState.itemsDeleted}</Tag> : null}
-          {currentState?.status === 'error' && currentState?.errorMessage ? (
+          {currentState?.status === 'error' && currentState.errorMessage ? (
             <Tag color="error" style={{ maxWidth: 520, overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {currentState.errorMessage}
             </Tag>
@@ -195,23 +317,41 @@ export default function DataGw2ApiPage() {
         rowKey="_id"
         cardBordered
         columns={columns}
+        search={{
+          labelWidth: 'auto',
+          searchText: 'Search entities',
+          resetText: 'Clear filters',
+        }}
+        locale={{
+          emptyText: hasSearch
+            ? 'No cached entities match the current search.'
+            : 'No cached GW2 API entities found for the selected type and language.',
+        }}
         request={async (params) => {
-          const { current, pageSize, q } = params as any;
-          const res = await request('/admin/v1/data/gw2-api/entities', {
-            params: {
-              type,
-              lang,
-              page: current || 1,
-              limit: pageSize || 20,
-              q: q || '',
-            },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const query = params as TableRequestParams;
+          setHasSearch(Boolean(query.q));
+
+          try {
+            const res = await request<EntityListResponse>('/admin/v1/data/gw2-api/entities', {
+              params: {
+                type,
+                lang,
+                page: query.current || 1,
+                limit: query.pageSize || 20,
+                q: query.q || '',
+              },
+            });
+            setTableErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setTableErrorMessage(getErrorMessage(error, 'Failed to load GW2 API entities'));
+            throw error;
+          }
         }}
       />
 
       <Modal
-        title="原始 JSON"
+        title="Raw JSON"
         open={payloadOpen}
         onCancel={() => setPayloadOpen(false)}
         onOk={() => setPayloadOpen(false)}
@@ -222,15 +362,15 @@ export default function DataGw2ApiPage() {
         </pre>
       </Modal>
 
-      <ModalForm
-        title="高级同步"
+      <ModalForm<SyncFormValues>
+        title="Advanced Sync"
         open={syncOpen}
         onOpenChange={setSyncOpen}
         modalProps={{ destroyOnClose: true }}
         initialValues={{ lang, prune: true, types: types.length ? [type] : [] }}
         onFinish={async (values) => {
           try {
-            message.loading({ content: '正在同步，请稍候…', key: 'sync2' });
+            message.loading({ content: 'Sync in progress...', key: 'sync2' });
             await request('/admin/v1/data/gw2-api/sync', {
               method: 'POST',
               body: JSON.stringify({
@@ -239,34 +379,38 @@ export default function DataGw2ApiPage() {
                 types: values.types || [],
               }),
             });
-            message.success({ content: '同步完成', key: 'sync2' });
+            message.success({ content: 'Sync completed', key: 'sync2' });
             setLang(values.lang);
-            refreshStates(values.lang);
+            await runSafeFollowUp(() => refreshStates(values.lang));
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
-            message.error({ content: e?.message || '同步失败', key: 'sync2' });
+          } catch (error: unknown) {
+            message.error({ content: getErrorMessage(error, 'Sync failed'), key: 'sync2' });
             return false;
           }
         }}
       >
         <ProFormSelect
           name="lang"
-          label="语言"
+          label="Language"
           options={[
-            { label: '中文(zh)', value: 'zh' },
-            { label: 'English(en)', value: 'en' },
+            { label: 'Chinese (zh)', value: 'zh' },
+            { label: 'English (en)', value: 'en' },
           ]}
           rules={[{ required: true }]}
         />
         <ProFormSelect
           name="types"
-          label="同步类型"
+          label="Types"
           mode="multiple"
           options={typeOptions}
-          rules={[{ required: true, message: '至少选择一个类型' }]}
+          rules={[{ required: true, message: 'Select at least one type' }]}
         />
-        <ProFormSwitch name="prune" label="清理旧数据" tooltip="开启后会删除本次同步未出现的旧记录（建议保持开启）" />
+        <ProFormSwitch
+          name="prune"
+          label="Prune Missing Items"
+          tooltip="Delete records that are missing from the current upstream sync result."
+        />
       </ModalForm>
     </PageContainer>
   );

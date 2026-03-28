@@ -1,25 +1,23 @@
-// src/layouts/BasicLayout.tsx
 import { ProLayout } from '@ant-design/pro-components';
-import { Dropdown, message, Spin } from 'antd';
 import {
-  LogoutOutlined,
-  UserOutlined,
-  DashboardOutlined,
-  TranslationOutlined,
-  TeamOutlined,
-  SafetyOutlined,
-  FileSearchOutlined,
-  TrophyOutlined,
-  DatabaseOutlined,
-  LinkOutlined,
   AppstoreOutlined,
-  KeyOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  FileSearchOutlined,
   FlagOutlined,
+  KeyOutlined,
   LineChartOutlined,
+  LinkOutlined,
+  LogoutOutlined,
+  SafetyOutlined,
+  TeamOutlined,
+  TranslationOutlined,
+  TrophyOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { Dropdown, message, Space, Spin, Tag } from 'antd';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { TOKEN_KEY, request } from '../services/request';
 
 type MeResp = {
@@ -54,79 +52,81 @@ export default function BasicLayout() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 强制改密：拉到 me 后立即跳
   useEffect(() => {
     if (!me) return;
     if (me.mustChangePassword && location.pathname !== '/change-password') {
       navigate('/change-password', { replace: true });
     }
-  }, [me, location.pathname, navigate]);
+  }, [location.pathname, me, navigate]);
 
-  const hasPerm = (perm?: string) => {
+  const hasPerm = useCallback((perm?: string) => {
     if (!perm) return true;
     if (!me) return false;
     if (me.isSuper) return true;
     return me.permissions.includes(perm);
-  };
+  }, [me]);
+
+  const roleSummary = useMemo(() => {
+    if (!me) return 'Admin workspace';
+    if (me.isSuper) return 'Super Admin';
+    if (me.roleNames.length > 0) return me.roleNames.join(', ');
+    return 'Scoped Admin';
+  }, [me]);
+
+  const permissionCount = me?.permissions.length ?? 0;
+  const avatarSeed = (me?.username || 'admin').trim().slice(0, 2).toUpperCase();
 
   const routeConfig = useMemo(() => {
     const raw: RouteItem[] = [
-      { path: '/dashboard', name: '仪表盘', icon: <DashboardOutlined />, requiredPerm: 'dashboard.read' },
-
-      { path: '/users', name: '用户管理', icon: <UserOutlined />, requiredPerm: 'users.read' },
-      { path: '/translations', name: '翻译语料', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
-      { path: '/slang', name: '黑话词典', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
-
+      { path: '/dashboard', name: 'Dashboard', icon: <DashboardOutlined />, requiredPerm: 'dashboard.read' },
+      { path: '/users', name: 'Users', icon: <UserOutlined />, requiredPerm: 'users.read' },
+      { path: '/translations', name: 'Translations', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
+      { path: '/slang', name: 'Slang Glossary', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
       {
         path: '/content',
-        name: '内容管理',
+        name: 'Content',
         icon: <TeamOutlined />,
         routes: [
-          { path: '/content/raids', name: 'Raid 招募', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
+          { path: '/content/raids', name: 'Raid Recruitment', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
         ],
       },
-
-      { path: '/wvw-guilds', name: 'WvW 工会招募', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
-
+      { path: '/wvw-guilds', name: 'WvW Guilds', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
       {
         path: '/data',
-        name: '数据管理',
+        name: 'Data',
         icon: <DatabaseOutlined />,
         routes: [
-          { path: '/data/resources-directory', name: '资源黄页', icon: <AppstoreOutlined />, requiredPerm: 'resources.read' },
-          { path: '/data/resources-recommended', name: '推荐资源', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
-          { path: '/data/legendary-blueprints', name: '传奇蓝图', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
-          { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-          { path: '/data/mistlock-instabilities', name: '迷雾异变', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-          { path: '/data/mistlock-rotations', name: '异变轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-
-          { path: '/data/gw2-api', name: 'GW2 官方数据', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
-
-          { path: '/data/market-watch', name: '交易所监控', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
+          { path: '/data/resources-directory', name: 'Resource Directory', icon: <AppstoreOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/resources-recommended', name: 'Recommended Resources', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/legendary-blueprints', name: 'Legendary Blueprints', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
+          { path: '/data/fractal-dailies', name: 'Fractal Dailies', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-instabilities', name: 'Mistlock Instabilities', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-rotations', name: 'Mistlock Rotations', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/gw2-api', name: 'GW2 API Data', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
+          { path: '/data/market-watch', name: 'Market Watch', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
         ],
       },
-
       {
         path: '/rbac',
-        name: '权限管理',
+        name: 'Permissions',
         icon: <SafetyOutlined />,
         routes: [
-          { path: '/rbac/admin-users', name: '管理员', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
-          { path: '/rbac/roles', name: '角色管理', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
+          { path: '/rbac/admin-users', name: 'Admin Users', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
+          { path: '/rbac/roles', name: 'Roles', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
         ],
       },
-
-      { path: '/audit', name: '审计日志', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
+      { path: '/audit', name: 'Audit Logs', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
     ];
 
     const filterRoutes = (list: RouteItem[]): RouteItem[] =>
       list
-        .map((it) => {
-          const children = it.routes ? filterRoutes(it.routes) : undefined;
-          const allowedSelf = hasPerm(it.requiredPerm);
+        .map((item) => {
+          const children = item.routes ? filterRoutes(item.routes) : undefined;
+          const allowedSelf = hasPerm(item.requiredPerm);
           const allowedByChildren = !!(children && children.length > 0);
+
           if (!allowedSelf && !allowedByChildren) return null;
-          return { ...it, routes: children };
+          return { ...item, routes: children };
         })
         .filter(Boolean) as RouteItem[];
 
@@ -136,23 +136,30 @@ export default function BasicLayout() {
         routes: filterRoutes(raw),
       },
     };
-  }, [me]);
+  }, [hasPerm]);
 
   const handleLogout = async () => {
     try {
       await request('/admin/v1/auth/logout-all', { method: 'POST' });
     } catch {
-      // ignore
+      // ignore logout-all failures and still clear local session
     }
+
     localStorage.removeItem(TOKEN_KEY);
-    message.success('已退出登录');
+    message.success('Signed out');
     navigate('/login');
   };
 
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Spin size="large" />
+        <Space direction="vertical" size={12} align="center">
+          <Spin size="large" />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#1f1f1f', fontSize: 16, fontWeight: 600 }}>Loading admin workspace</div>
+            <div style={{ color: '#8c8c8c', fontSize: 13 }}>Checking account permissions and shell context...</div>
+          </div>
+        </Space>
       </div>
     );
   }
@@ -162,8 +169,26 @@ export default function BasicLayout() {
       <ProLayout
         style={{ height: '100%' }}
         contentStyle={{ overflow: 'auto' }}
-        title="GW2 Admin"
-        logo="https://wiki.guildwars2.com/images/d/df/Gw2-logo.png"
+        title="COS Admin"
+        logo={(
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#fff',
+              background: 'linear-gradient(135deg, #1677ff 0%, #0f766e 100%)',
+              boxShadow: '0 10px 20px rgba(22, 119, 255, 0.18)',
+            }}
+          >
+            GW2
+          </div>
+        )}
         layout="mix"
         splitMenus={false}
         fixSiderbar
@@ -173,9 +198,50 @@ export default function BasicLayout() {
         contentWidth="Fluid"
         location={{ pathname: location.pathname }}
         route={routeConfig.route}
+        menuFooterRender={(props) => {
+          if (props?.collapsed || !me) return null;
+
+          return (
+            <div
+              style={{
+                margin: 12,
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: '1px solid #f0f0f0',
+                background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+              }}
+            >
+              <div
+                style={{
+                  color: '#8c8c8c',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 0.4,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Current Admin
+              </div>
+              <div style={{ marginTop: 8, color: '#1f1f1f', fontSize: 14, fontWeight: 600 }}>{me.username}</div>
+              <div style={{ marginTop: 4, color: '#8c8c8c', fontSize: 12 }}>{roleSummary}</div>
+              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Tag color={me.isSuper ? 'gold' : 'blue'} style={{ marginInlineEnd: 0 }}>
+                  {me.isSuper ? 'Super Admin' : 'Role Scoped'}
+                </Tag>
+                <Tag style={{ marginInlineEnd: 0 }}>{permissionCount} perms</Tag>
+                {me.mustChangePassword ? (
+                  <Tag color="warning" style={{ marginInlineEnd: 0 }}>
+                    Password reset required
+                  </Tag>
+                ) : null}
+              </div>
+            </div>
+          );
+        }}
         menuItemRender={(item, dom) => {
-          const anyItem = item as any;
-          const hasChildren = Array.isArray(anyItem.routes) && anyItem.routes.length > 0;
+          const routeItem = item as RouteItem;
+          const hasChildren = Array.isArray(routeItem.routes) && routeItem.routes.length > 0;
+
           return (
             <div
               onClick={() => {
@@ -188,29 +254,56 @@ export default function BasicLayout() {
           );
         }}
         avatarProps={{
-          src: `https://api.dicebear.com/7.x/miniavs/svg?seed=${encodeURIComponent(me?.username || 'admin')}`,
           size: 'small',
-          title: me?.username || '管理员',
-          render: (_props, dom) => (
+          render: () => (
             <Dropdown
               menu={{
                 items: [
                   {
                     key: 'changePassword',
                     icon: <KeyOutlined />,
-                    label: '修改密码',
+                    label: 'Change password',
                     onClick: () => navigate('/change-password'),
                   },
                   {
                     key: 'logout',
                     icon: <LogoutOutlined />,
-                    label: '退出登录',
+                    label: 'Sign out',
                     onClick: handleLogout,
                   },
                 ],
               }}
             >
-              <div style={{ cursor: 'pointer', padding: '0 8px' }}>{dom}</div>
+              <div style={{ cursor: 'pointer', padding: '0 8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: me?.isSuper
+                        ? 'linear-gradient(135deg, #faad14 0%, #d46b08 100%)'
+                        : 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
+                    }}
+                  >
+                    {avatarSeed}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                    <span style={{ color: '#1f1f1f', fontSize: 13, fontWeight: 600 }}>
+                      {me?.username || 'Admin'}
+                    </span>
+                    <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+                      {me?.isSuper ? 'Super Admin' : roleSummary}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </Dropdown>
           ),
         }}

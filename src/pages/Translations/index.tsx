@@ -1,7 +1,18 @@
-import { PageContainer, ProTable, type ProColumns, type ActionType, ModalForm, ProFormTextArea, ProFormSelect, ProFormSwitch } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tag } from 'antd';
+import {
+  ModalForm,
+  PageContainer,
+  ProFormSelect,
+  ProFormSwitch,
+  ProFormTextArea,
+  ProTable,
+  type ActionType,
+  type ProColumns,
+} from '@ant-design/pro-components';
+import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { getErrorMessage, request } from '../../services/request';
 
 type TranslationItem = {
   _id: string;
@@ -15,61 +26,86 @@ type TranslationItem = {
   updatedAt: string;
 };
 
+type TableRequestParams = {
+  current?: number;
+  pageSize?: number;
+  q?: string;
+};
+
+type TranslationListResponse = {
+  items: TranslationItem[];
+  total: number;
+};
+
+type TranslationEditValues = {
+  translatedText: string;
+};
+
+type TranslationCreateValues = {
+  direction: 'CN_TO_EN' | 'EN_TO_CN';
+  sourceText: string;
+  translatedText: string;
+  overwrite?: boolean;
+};
+
 export default function TranslationsPage() {
   const actionRef = useRef<ActionType>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [current, setCurrent] = useState<TranslationItem | null>(null);
-
   const [createOpen, setCreateOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasSearch, setHasSearch] = useState(false);
+  const tableState = getFilterAwareTableProps({
+    hasFilters: hasSearch,
+    searchText: 'Search translations',
+    filteredEmptyText: 'No translation entries match the current search.',
+    emptyText: 'No translation cache entries have been created yet.',
+  });
 
   const columns: ProColumns<TranslationItem>[] = [
+    { title: 'Keyword', dataIndex: 'q', hideInTable: true },
     {
-      title: '关键词',
-      dataIndex: 'q',
-      hideInTable: true,
-    },
-    {
-      title: '方向',
+      title: 'Direction',
       dataIndex: 'direction',
       width: 110,
       valueEnum: {
-        CN_TO_EN: { text: '中→英' },
-        EN_TO_CN: { text: '英→中' },
+        CN_TO_EN: { text: 'CN to EN' },
+        EN_TO_CN: { text: 'EN to CN' },
       },
-      render: (_, r) => <Tag>{r.direction === 'CN_TO_EN' ? '中→英' : '英→中'}</Tag>,
+      render: (_, record) => <Tag>{record.direction === 'CN_TO_EN' ? 'CN to EN' : 'EN to CN'}</Tag>,
     },
     {
-      title: '原文(归一化)',
+      title: 'Normalized Source',
       dataIndex: 'sourceTextNorm',
       ellipsis: true,
       copyable: true,
     },
     {
-      title: '译文',
+      title: 'Translation',
       dataIndex: 'translatedText',
       ellipsis: true,
     },
     {
-      title: '使用次数',
+      title: 'Usage Count',
       dataIndex: 'usageCount',
       width: 90,
       search: false,
     },
     {
-      title: '模型',
+      title: 'Model',
       dataIndex: 'model',
       width: 140,
       search: false,
     },
     {
-      title: '更新时间',
+      title: 'Updated At',
       dataIndex: 'updatedAt',
       valueType: 'dateTime',
       width: 170,
       search: false,
     },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 180,
       render: (_, record) => (
@@ -81,19 +117,19 @@ export default function TranslationsPage() {
               setEditOpen(true);
             }}
           >
-            编辑
+            Edit
           </Button>
 
           <Popconfirm
-            title="确定删除该条语料？"
+            title="Delete this translation entry?"
             onConfirm={async () => {
               await request(`/admin/v1/translations/${record._id}`, { method: 'DELETE' });
-              message.success('已删除');
+              message.success('Deleted');
               actionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              删除
+              Delete
             </Button>
           </Popconfirm>
         </Space>
@@ -103,35 +139,50 @@ export default function TranslationsPage() {
 
   return (
     <PageContainer
-      title="翻译语料"
-      subTitle="查看/修正/删除翻译缓存（支持手动新增）"
+      title="Translations"
+      subTitle="Inspect, edit, delete, and manually add translation cache entries"
       extra={[
         <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
-          新增语料
+          Create Entry
         </Button>,
       ]}
     >
+      <PageRequestErrorAlert
+        message="Unable to load translation entries"
+        description={errorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<TranslationItem>
         actionRef={actionRef}
         rowKey="_id"
         columns={columns}
         cardBordered
+        {...tableState}
         request={async (params) => {
-          const { current, pageSize, q } = params as any;
-          const res = await request('/admin/v1/translations', {
-            params: {
-              page: current || 1,
-              limit: pageSize || 20,
-              q: q || '',
-              sort: 'hot',
-            },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const query = params as TableRequestParams;
+          setHasSearch(Boolean(query.q));
+
+          try {
+            const res = await request<TranslationListResponse>('/admin/v1/translations', {
+              params: {
+                page: query.current || 1,
+                limit: query.pageSize || 20,
+                q: query.q || '',
+                sort: 'hot',
+              },
+            });
+            setErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setErrorMessage(getErrorMessage(error, 'Failed to load translation entries'));
+            throw error;
+          }
         }}
       />
 
-      <ModalForm
-        title="编辑译文"
+      <ModalForm<TranslationEditValues>
+        title="Edit Translation"
         open={editOpen}
         onOpenChange={setEditOpen}
         modalProps={{ destroyOnClose: true }}
@@ -141,7 +192,7 @@ export default function TranslationsPage() {
             method: 'PUT',
             body: JSON.stringify({ translatedText: values.translatedText }),
           });
-          message.success('已更新');
+          message.success('Updated');
           actionRef.current?.reload();
           return true;
         }}
@@ -149,14 +200,14 @@ export default function TranslationsPage() {
       >
         <ProFormTextArea
           name="translatedText"
-          label="译文"
-          rules={[{ required: true, message: '必填' }]}
+          label="Translation"
+          rules={[{ required: true, message: 'Required' }]}
           fieldProps={{ rows: 6 }}
         />
       </ModalForm>
 
-      <ModalForm
-        title="新增翻译语料"
+      <ModalForm<TranslationCreateValues>
+        title="Create Translation"
         open={createOpen}
         onOpenChange={setCreateOpen}
         modalProps={{ destroyOnClose: true }}
@@ -171,38 +222,38 @@ export default function TranslationsPage() {
               overwrite: values.overwrite,
             }),
           });
-          message.success('已保存');
+          message.success('Saved');
           actionRef.current?.reload();
           return true;
         }}
       >
         <ProFormSelect
           name="direction"
-          label="方向"
+          label="Direction"
           valueEnum={{
-            CN_TO_EN: { text: '中→英' },
-            EN_TO_CN: { text: '英→中' },
+            CN_TO_EN: { text: 'CN to EN' },
+            EN_TO_CN: { text: 'EN to CN' },
           }}
-          rules={[{ required: true, message: '必选' }]}
+          rules={[{ required: true, message: 'Required' }]}
         />
 
         <ProFormTextArea
           name="sourceText"
-          label="原文"
-          rules={[{ required: true, message: '必填' }]}
+          label="Source Text"
+          rules={[{ required: true, message: 'Required' }]}
           fieldProps={{ rows: 4 }}
         />
 
         <ProFormTextArea
           name="translatedText"
-          label="译文"
-          rules={[{ required: true, message: '必填' }]}
+          label="Translated Text"
+          rules={[{ required: true, message: 'Required' }]}
           fieldProps={{ rows: 6 }}
         />
 
         <ProFormSwitch
           name="overwrite"
-          label="若已存在则覆盖"
+          label="Overwrite Existing Entry"
         />
       </ModalForm>
     </PageContainer>

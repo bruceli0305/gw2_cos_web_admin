@@ -10,8 +10,11 @@ import {
   ProFormSelect,
 } from '@ant-design/pro-components';
 import { Button, message, Popconfirm, Space, Tabs, Tag } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { runSafeFollowUp } from '../../services/followUp';
+import { getErrorMessage, request } from '../../services/request';
 
 type SlangGroup = {
   _id: string;
@@ -36,6 +39,9 @@ export default function SlangPage() {
   const termActionRef = useRef<ActionType>(null);
 
   const [groups, setGroups] = useState<SlangGroup[]>([]);
+  const [groupsErrorMessage, setGroupsErrorMessage] = useState<string | null>(null);
+  const [termTableErrorMessage, setTermTableErrorMessage] = useState<string | null>(null);
+  const [hasTermFilters, setHasTermFilters] = useState(false);
 
   // ===== Group modals =====
   const [groupCreateOpen, setGroupCreateOpen] = useState(false);
@@ -46,15 +52,58 @@ export default function SlangPage() {
   const [termCreateOpen, setTermCreateOpen] = useState(false);
   const [termEditOpen, setTermEditOpen] = useState(false);
   const [currentTerm, setCurrentTerm] = useState<SlangTerm | null>(null);
+  const termTableState = getFilterAwareTableProps({
+    hasFilters: hasTermFilters,
+    searchText: 'Apply filters',
+    filteredEmptyText: 'No slang terms match the current filters.',
+    emptyText: 'No slang terms have been added yet.',
+  });
 
-  async function refreshGroups() {
+  const fetchGroups = useCallback(async () => {
     const res = await request<{ items: SlangGroup[] }>('/admin/v1/slang/groups');
-    setGroups(res.items || []);
-  }
+    return res.items || [];
+  }, []);
+
+  const refreshGroups = useCallback(async () => {
+    const items = await fetchGroups();
+    setGroups(items);
+    setGroupsErrorMessage(null);
+    return items;
+  }, [fetchGroups]);
 
   useEffect(() => {
-    refreshGroups().catch(() => {});
-  }, []);
+    let active = true;
+
+    async function loadGroups() {
+      try {
+        const items = await fetchGroups();
+        if (!active) return;
+        setGroups(items);
+        setGroupsErrorMessage(null);
+      } catch (error: unknown) {
+        if (active) {
+          setGroupsErrorMessage(getErrorMessage(error, 'Failed to load slang groups'));
+        }
+      }
+    }
+
+    void loadGroups();
+    return () => {
+      active = false;
+    };
+  }, [fetchGroups]);
+
+  type TermTableRequestParams = {
+    current?: number;
+    pageSize?: number;
+    q?: string;
+    groupId?: string;
+  };
+
+  type TermListResponse = {
+    items: SlangTerm[];
+    total: number;
+  };
 
   const groupValueEnum = useMemo(() => {
     const e: Record<string, { text: string }> = {};
@@ -104,7 +153,7 @@ export default function SlangPage() {
             onConfirm={async () => {
               await request(`/admin/v1/slang/groups/${record._id}`, { method: 'DELETE' });
               message.success('已删除');
-              await refreshGroups();
+              await runSafeFollowUp(refreshGroups);
               groupActionRef.current?.reload();
               termActionRef.current?.reload();
             }}
@@ -201,6 +250,18 @@ export default function SlangPage() {
       title="黑话词典"
       subTitle="录入/管理游戏内黑话（中文 → 英文/缩写），供前台/小程序快捷复制使用"
     >
+      <PageRequestErrorAlert
+        message="Unable to load slang groups"
+        description={groupsErrorMessage}
+        onRetry={() => void refreshGroups().catch(() => undefined)}
+      />
+
+      <PageRequestErrorAlert
+        message="Unable to load slang terms"
+        description={termTableErrorMessage}
+        onRetry={() => termActionRef.current?.reload()}
+      />
+
       <Tabs
         defaultActiveKey="terms"
         items={[
@@ -214,22 +275,31 @@ export default function SlangPage() {
                   rowKey="_id"
                   columns={termColumns}
                   cardBordered
+                  {...termTableState}
                   toolBarRender={() => [
                     <Button key="create" type="primary" onClick={() => setTermCreateOpen(true)}>
                       新增黑话
                     </Button>,
                   ]}
                   request={async (params) => {
-                    const { current, pageSize, q, groupId } = params as any;
-                    const res = await request('/admin/v1/slang/terms', {
-                      params: {
-                        page: current || 1,
-                        limit: pageSize || 20,
-                        q: q || '',
-                        groupId: groupId || '',
-                      },
-                    });
-                    return { data: res.items, total: res.total, success: true };
+                    const query = params as TermTableRequestParams;
+                    setHasTermFilters(Boolean(query.q || query.groupId));
+
+                    try {
+                      const res = await request<TermListResponse>('/admin/v1/slang/terms', {
+                        params: {
+                          page: query.current || 1,
+                          limit: query.pageSize || 20,
+                          q: query.q || '',
+                          groupId: query.groupId || '',
+                        },
+                      });
+                      setTermTableErrorMessage(null);
+                      return { data: res.items, total: res.total, success: true };
+                    } catch (error: unknown) {
+                      setTermTableErrorMessage(getErrorMessage(error, 'Failed to load slang terms'));
+                      throw error;
+                    }
                   }}
                 />
 
@@ -360,6 +430,7 @@ export default function SlangPage() {
                   columns={groupColumns}
                   cardBordered
                   search={false}
+                  locale={{ emptyText: 'No slang groups have been created yet.' }}
                   pagination={false}
                   toolBarRender={() => [
                     <Button key="create" type="primary" onClick={() => setGroupCreateOpen(true)}>
@@ -367,9 +438,13 @@ export default function SlangPage() {
                     </Button>,
                   ]}
                   request={async () => {
-                    const res = await request<{ items: SlangGroup[] }>('/admin/v1/slang/groups');
-                    setGroups(res.items || []);
-                    return { data: res.items || [], success: true };
+                    try {
+                      const items = await refreshGroups();
+                      return { data: items, success: true };
+                    } catch (error: unknown) {
+                      setGroupsErrorMessage(getErrorMessage(error, 'Failed to load slang groups'));
+                      throw error;
+                    }
                   }}
                 />
 
@@ -387,7 +462,7 @@ export default function SlangPage() {
                       }),
                     });
                     message.success('已保存');
-                    await refreshGroups();
+                    await runSafeFollowUp(refreshGroups);
                     groupActionRef.current?.reload();
                     return true;
                   }}
@@ -428,7 +503,7 @@ export default function SlangPage() {
                       }),
                     });
                     message.success('已更新');
-                    await refreshGroups();
+                    await runSafeFollowUp(refreshGroups);
                     groupActionRef.current?.reload();
                     termActionRef.current?.reload();
                     return true;

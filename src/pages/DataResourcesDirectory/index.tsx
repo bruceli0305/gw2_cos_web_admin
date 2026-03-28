@@ -9,8 +9,11 @@ import {
   ProFormSelect,
 } from '@ant-design/pro-components';
 import { Button, message, Popconfirm, Space, Tag } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { runSafeFollowUp } from '../../services/followUp';
+import { getErrorMessage, request } from '../../services/request';
 
 type Overview = {
   generated_at_utc?: string;
@@ -35,27 +38,81 @@ type Item = {
   updatedAt: string;
 };
 
+type CategoryValueEnum = Record<string, { text: string }>;
+
+type TableRequestParams = {
+  current?: number;
+  pageSize?: number;
+  q?: string;
+  category?: string;
+  tag?: string;
+};
+
+type DirectoryListResponse = {
+  items: Item[];
+  total: number;
+};
+
+type ImportResponse = {
+  categoriesInserted: number;
+  itemsInserted: number;
+  skipped: number;
+};
+
 export default function DataResourcesDirectoryPage() {
   const actionRef = useRef<ActionType>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [overviewErrorMessage, setOverviewErrorMessage] = useState<string | null>(null);
+  const [tableErrorMessage, setTableErrorMessage] = useState<string | null>(null);
+  const [hasFilters, setHasFilters] = useState(false);
 
   const [importOpen, setImportOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [current, setCurrent] = useState<Item | null>(null);
+  const tableState = getFilterAwareTableProps({
+    hasFilters,
+    searchText: 'Apply filters',
+    filteredEmptyText: 'No directory resources match the current filters.',
+    emptyText: 'No directory resources have been added yet.',
+  });
 
-  async function reloadOverview() {
-    const res = await request<Overview>('/admin/v1/data/resources-directory/overview');
-    setOverview(res);
-  }
-
-  useEffect(() => {
-    reloadOverview().catch(() => {});
+  const fetchOverview = useCallback(async () => {
+    return request<Overview>('/admin/v1/data/resources-directory/overview');
   }, []);
 
+  const reloadOverview = useCallback(async () => {
+    const res = await fetchOverview();
+    setOverview(res);
+    setOverviewErrorMessage(null);
+    return res;
+  }, [fetchOverview]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOverview() {
+      try {
+        const res = await fetchOverview();
+        if (!active) return;
+        setOverview(res);
+        setOverviewErrorMessage(null);
+      } catch (error: unknown) {
+        if (active) {
+          setOverviewErrorMessage(getErrorMessage(error, 'Failed to load directory overview'));
+        }
+      }
+    }
+
+    void loadOverview();
+    return () => {
+      active = false;
+    };
+  }, [fetchOverview]);
+
   const categoryEnum = useMemo(() => {
-    const out: any = {};
+    const out: CategoryValueEnum = {};
     for (const c of overview?.categories || []) out[c.name] = { text: `${c.name} (${c.count})` };
     return out;
   }, [overview]);
@@ -109,7 +166,7 @@ export default function DataResourcesDirectoryPage() {
             onConfirm={async () => {
               await request(`/admin/v1/data/resources-directory/items/${r._id}`, { method: 'DELETE' });
               message.success('已删除');
-              await reloadOverview();
+              await runSafeFollowUp(reloadOverview);
               actionRef.current?.reload();
             }}
           >
@@ -145,23 +202,44 @@ export default function DataResourcesDirectoryPage() {
         </Button>,
       ]}
     >
+      <PageRequestErrorAlert
+        message="Unable to load directory overview"
+        description={overviewErrorMessage}
+        onRetry={() => void reloadOverview().catch(() => undefined)}
+      />
+
+      <PageRequestErrorAlert
+        message="Unable to load directory resources"
+        description={tableErrorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<Item>
         actionRef={actionRef}
         rowKey="_id"
         cardBordered
         columns={columns}
+        {...tableState}
         request={async (params) => {
-          const { current, pageSize, q, category, tag } = params as any;
-          const res = await request('/admin/v1/data/resources-directory/items', {
-            params: {
-              page: current || 1,
-              limit: pageSize || 20,
-              q: q || '',
-              category: category || '',
-              tag: tag || '',
-            },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const query = params as TableRequestParams;
+          setHasFilters(Boolean(query.q || query.category || query.tag));
+
+          try {
+            const res = await request<DirectoryListResponse>('/admin/v1/data/resources-directory/items', {
+              params: {
+                page: query.current || 1,
+                limit: query.pageSize || 20,
+                q: query.q || '',
+                category: query.category || '',
+                tag: query.tag || '',
+              },
+            });
+            setTableErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setTableErrorMessage(getErrorMessage(error, 'Failed to load directory resources'));
+            throw error;
+          }
         }}
       />
 
@@ -189,7 +267,7 @@ export default function DataResourcesDirectoryPage() {
             }),
           });
           message.success('创建成功');
-          await reloadOverview();
+          await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
@@ -256,7 +334,7 @@ export default function DataResourcesDirectoryPage() {
             }),
           });
           message.success('更新成功');
-          await reloadOverview();
+          await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
@@ -294,15 +372,16 @@ export default function DataResourcesDirectoryPage() {
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request('/admin/v1/data/resources-directory/import', {
+            const res = await request<ImportResponse>('/admin/v1/data/resources-directory/import', {
               method: 'POST',
               body: JSON.stringify(json),
             });
             message.success(`导入成功：分类 ${res.categoriesInserted}，条目 ${res.itemsInserted}，跳过 ${res.skipped}`);
-            await reloadOverview();
+            await runSafeFollowUp(reloadOverview);
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
+          } catch (error: unknown) {
+            const e = { message: getErrorMessage(error, 'Import failed') };
             message.error(e?.message || 'JSON 解析/导入失败');
             return false;
           }

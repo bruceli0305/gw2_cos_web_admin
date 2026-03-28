@@ -1,18 +1,20 @@
 import {
-  PageContainer,
-  ProTable,
-  type ProColumns,
-  type ActionType,
   ModalForm,
-  ProFormText,
-  ProFormSwitch,
+  PageContainer,
   ProFormSelect,
+  ProFormSwitch,
+  ProFormText,
+  ProTable,
+  type ActionType,
+  type ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tag } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { Button, Popconfirm, Space, Tag, message } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getErrorMessage, request } from '../../services/request';
 
 type RoleItem = { _id: string; name: string; isSuper: boolean };
+
 type AdminUserItem = {
   _id: string;
   username: string;
@@ -23,99 +25,159 @@ type AdminUserItem = {
   createdAt: string;
 };
 
+type TableRequestParams = {
+  current?: number;
+  pageSize?: number;
+};
+
+type AdminUserListResponse = {
+  items: AdminUserItem[];
+  total: number;
+};
+
+type AdminUserEditValues = {
+  isActive?: boolean;
+  roleIds?: string[];
+};
+
+type AdminUserCreateValues = {
+  username: string;
+  password: string;
+  isActive?: boolean;
+  roleIds?: string[];
+};
+
+type ResetPasswordValues = {
+  password: string;
+};
+
 export default function RbacAdminUsersPage() {
   const actionRef = useRef<ActionType>(null);
 
   const [roles, setRoles] = useState<RoleItem[]>([]);
+  const [rolesErrorMessage, setRolesErrorMessage] = useState<string | null>(null);
+  const [tableErrorMessage, setTableErrorMessage] = useState<string | null>(null);
   const roleOptions = useMemo(
-    () => roles.map((r) => ({ label: r.isSuper ? `${r.name} (Super)` : r.name, value: r._id })),
-    [roles]
+    () => roles.map((role) => ({ label: role.isSuper ? `${role.name} (Super)` : role.name, value: role._id })),
+    [roles],
   );
-  const roleMap = useMemo(() => new Map(roles.map((r) => [r._id, r])), [roles]);
+  const roleMap = useMemo(() => new Map(roles.map((role) => [role._id, role])), [roles]);
 
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdUser, setPwdUser] = useState<AdminUserItem | null>(null);
 
-  useEffect(() => {
-    request<{ items: any[] }>('/admin/v1/rbac/roles')
-      .then((res) => setRoles(res.items))
-      .catch(() => {});
+  const fetchRoles = useCallback(async () => {
+    const res = await request<{ items: RoleItem[] }>('/admin/v1/rbac/roles');
+    return res.items;
   }, []);
 
+  const loadRoles = useCallback(async () => {
+    const items = await fetchRoles();
+    setRoles(items);
+    setRolesErrorMessage(null);
+    return items;
+  }, [fetchRoles]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInitialRoles() {
+      try {
+        const items = await fetchRoles();
+        if (!active) return;
+        setRoles(items);
+        setRolesErrorMessage(null);
+      } catch (error: unknown) {
+        if (active) {
+          setRolesErrorMessage(getErrorMessage(error, 'Failed to load role options'));
+        }
+      }
+    }
+
+    void loadInitialRoles();
+    return () => {
+      active = false;
+    };
+  }, [fetchRoles]);
+
   const columns: ProColumns<AdminUserItem>[] = [
-    { title: '用户名', dataIndex: 'username', copyable: true },
+    { title: 'Username', dataIndex: 'username', copyable: true },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'isActive',
       width: 120,
-      render: (_, r) => (r.isActive ? <Tag color="success">启用</Tag> : <Tag color="error">禁用</Tag>),
+      render: (_, record) => (record.isActive ? <Tag color="success">Active</Tag> : <Tag color="error">Disabled</Tag>),
     },
     {
-      title: '角色',
+      title: 'Roles',
       dataIndex: 'roleIds',
       search: false,
-      render: (_, r) => (
+      render: (_, record) => (
         <Space wrap>
-          {(r.roleIds || []).map((id) => {
-            const role = roleMap.get(id);
-            return <Tag key={id} color={role?.isSuper ? 'gold' : 'blue'}>{role?.name || id}</Tag>;
+          {(record.roleIds || []).map((roleId) => {
+            const role = roleMap.get(roleId);
+            return (
+              <Tag key={roleId} color={role?.isSuper ? 'gold' : 'blue'}>
+                {role?.name || roleId}
+              </Tag>
+            );
           })}
         </Space>
       ),
     },
-    { title: '最后登录', dataIndex: 'lastLoginAt', valueType: 'dateTime', width: 170, search: false },
-    { title: '注册时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
+    { title: 'Last Login', dataIndex: 'lastLoginAt', valueType: 'dateTime', width: 170, search: false },
+    { title: 'Created At', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 260,
-      render: (_, r) => (
+      render: (_, record) => (
         <Space>
-          <ModalForm
-            title={`编辑管理员: ${r.username}`}
-            trigger={<Button type="link">编辑</Button>}
+          <ModalForm<AdminUserEditValues>
+            title={`Edit Admin User: ${record.username}`}
+            trigger={<Button type="link">Edit</Button>}
             modalProps={{ destroyOnClose: true }}
-            initialValues={{ isActive: r.isActive, roleIds: r.roleIds }}
+            initialValues={{ isActive: record.isActive, roleIds: record.roleIds }}
             onFinish={async (values) => {
-              await request(`/admin/v1/rbac/admin-users/${r._id}`, {
+              await request(`/admin/v1/rbac/admin-users/${record._id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ isActive: !!values.isActive, roleIds: values.roleIds || [] }),
               });
-              message.success('更新成功');
+              message.success('Updated');
               actionRef.current?.reload();
               return true;
             }}
           >
-            <ProFormSwitch name="isActive" label="启用" />
+            <ProFormSwitch name="isActive" label="Active" />
             <ProFormSelect
               name="roleIds"
-              label="角色"
+              label="Roles"
               mode="multiple"
               options={roleOptions}
-              rules={[{ required: true, message: '至少选择一个角色' }]}
+              rules={[{ required: true, message: 'Select at least one role' }]}
             />
           </ModalForm>
 
           <Button
             type="link"
             onClick={() => {
-              setPwdUser(r);
+              setPwdUser(record);
               setPwdOpen(true);
             }}
           >
-            改密
+            Reset Password
           </Button>
 
           <Popconfirm
-            title="删除该管理员？"
+            title="Delete this admin user?"
             onConfirm={async () => {
-              await request(`/admin/v1/rbac/admin-users/${r._id}`, { method: 'DELETE' });
-              message.success('已删除');
+              await request(`/admin/v1/rbac/admin-users/${record._id}`, { method: 'DELETE' });
+              message.success('Deleted');
               actionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              删除
+              Delete
             </Button>
           </Popconfirm>
         </Space>
@@ -124,16 +186,29 @@ export default function RbacAdminUsersPage() {
   ];
 
   return (
-    <PageContainer title="管理员账号" subTitle="创建/禁用/分配角色/重置密码">
+    <PageContainer title="Admin Users" subTitle="Create, disable, assign roles, and reset passwords">
+      <PageRequestErrorAlert
+        message="Unable to load role options"
+        description={rolesErrorMessage}
+        onRetry={() => void loadRoles().catch(() => undefined)}
+      />
+
+      <PageRequestErrorAlert
+        message="Unable to load admin users"
+        description={tableErrorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<AdminUserItem>
         actionRef={actionRef}
         rowKey="_id"
         cardBordered
+        locale={{ emptyText: 'No admin users have been created yet.' }}
         toolBarRender={() => [
-          <ModalForm
+          <ModalForm<AdminUserCreateValues>
             key="create"
-            title="新建管理员"
-            trigger={<Button type="primary">新建管理员</Button>}
+            title="Create Admin User"
+            trigger={<Button type="primary">Create Admin User</Button>}
             modalProps={{ destroyOnClose: true }}
             onFinish={async (values) => {
               await request('/admin/v1/rbac/admin-users', {
@@ -145,35 +220,41 @@ export default function RbacAdminUsersPage() {
                   roleIds: values.roleIds || [],
                 }),
               });
-              message.success('创建成功');
+              message.success('Created');
               actionRef.current?.reload();
               return true;
             }}
           >
-            <ProFormText name="username" label="用户名" rules={[{ required: true }, { min: 3 }]} />
-            <ProFormText.Password name="password" label="密码" rules={[{ required: true }, { min: 10 }]} />
-            <ProFormSwitch name="isActive" label="启用" initialValue />
+            <ProFormText name="username" label="Username" rules={[{ required: true }, { min: 3 }]} />
+            <ProFormText.Password name="password" label="Password" rules={[{ required: true }, { min: 10 }]} />
+            <ProFormSwitch name="isActive" label="Active" initialValue />
             <ProFormSelect
               name="roleIds"
-              label="角色"
+              label="Roles"
               mode="multiple"
               options={roleOptions}
-              rules={[{ required: true, message: '至少选择一个角色' }]}
+              rules={[{ required: true, message: 'Select at least one role' }]}
             />
           </ModalForm>,
         ]}
         request={async (params) => {
-          const { current, pageSize } = params as any;
-          const res = await request('/admin/v1/rbac/admin-users', {
-            params: { page: current || 1, limit: pageSize || 20 },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const query = params as TableRequestParams;
+          try {
+            const res = await request<AdminUserListResponse>('/admin/v1/rbac/admin-users', {
+              params: { page: query.current || 1, limit: query.pageSize || 20 },
+            });
+            setTableErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setTableErrorMessage(getErrorMessage(error, 'Failed to load admin users'));
+            throw error;
+          }
         }}
         columns={columns}
       />
 
-      <ModalForm
-        title={`重置密码: ${pwdUser?.username || ''}`}
+      <ModalForm<ResetPasswordValues>
+        title={`Reset Password: ${pwdUser?.username || ''}`}
         open={pwdOpen}
         onOpenChange={setPwdOpen}
         modalProps={{ destroyOnClose: true }}
@@ -183,11 +264,11 @@ export default function RbacAdminUsersPage() {
             method: 'PUT',
             body: JSON.stringify({ password: values.password }),
           });
-          message.success('密码已重置');
+          message.success('Password reset');
           return true;
         }}
       >
-        <ProFormText.Password name="password" label="新密码" rules={[{ required: true }, { min: 10 }]} />
+        <ProFormText.Password name="password" label="New Password" rules={[{ required: true }, { min: 10 }]} />
       </ModalForm>
     </PageContainer>
   );

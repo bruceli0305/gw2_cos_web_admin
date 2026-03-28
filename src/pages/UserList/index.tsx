@@ -1,15 +1,17 @@
 import {
   PageContainer,
   ProTable,
-  type ProColumns,
   type ActionType,
+  type ProColumns,
   ModalForm,
   ProFormText,
 } from '@ant-design/pro-components';
-import { Tag, Switch, message, Button, Popconfirm, Space } from 'antd';
+import { DeleteOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Popconfirm, Space, Switch, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
-import { PlusOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
-import { request } from '../../services/request';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { getErrorMessage, request } from '../../services/request';
 
 type UserItem = {
   _id: string;
@@ -20,61 +22,85 @@ type UserItem = {
   createdAt: string;
 };
 
+type TableRequestParams = {
+  current?: number;
+  pageSize?: number;
+  username?: string;
+};
+
+type UserListResponse = {
+  items: UserItem[];
+  total: number;
+};
+
+type CreateUserValues = {
+  username: string;
+  password: string;
+};
+
+type ResetPasswordValues = {
+  newPassword: string;
+};
+
 export default function UserListPage() {
   const actionRef = useRef<ActionType>(null);
-
-  // 修改密码弹窗
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserItem | null>(null);
-
-  // 新建用户弹窗
   const [createOpen, setCreateOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasSearch, setHasSearch] = useState(false);
+  const tableState = getFilterAwareTableProps({
+    hasFilters: hasSearch,
+    searchText: 'Search users',
+    filteredEmptyText: 'No users match the current search.',
+    emptyText: 'No frontend users found yet.',
+  });
 
   const columns: ProColumns<UserItem>[] = [
     {
-      title: '用户名',
+      title: 'Username',
       dataIndex: 'username',
       copyable: true,
-      fieldProps: { placeholder: '输入用户名搜索' },
+      fieldProps: { placeholder: 'Search by username' },
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'isBanned',
       valueType: 'select',
       valueEnum: {
-        false: { text: '正常', status: 'Success' },
-        true: { text: '已封禁', status: 'Error' },
+        false: { text: 'Active', status: 'Success' },
+        true: { text: 'Banned', status: 'Error' },
       },
       render: (_, record) => (
         <Tag color={record.isBanned ? 'error' : 'success'}>
-          {record.isBanned ? '已封禁' : '正常'}
+          {record.isBanned ? 'Banned' : 'Active'}
         </Tag>
       ),
     },
     {
-      title: '最后登录',
+      title: 'Last Login',
       dataIndex: 'lastLoginAt',
       valueType: 'dateTime',
       search: false,
       width: 170,
     },
     {
-      title: '注册时间',
+      title: 'Created At',
       dataIndex: 'createdAt',
       valueType: 'dateTime',
       search: false,
       width: 170,
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'action',
       valueType: 'option',
       width: 260,
       render: (_, record) => (
         <Space>
           <Switch
-            checkedChildren="封"
-            unCheckedChildren="正"
+            checkedChildren="Ban"
+            unCheckedChildren="OK"
             size="small"
             checked={record.isBanned}
             onChange={async (checked) => {
@@ -83,9 +109,11 @@ export default function UserListPage() {
                   method: 'PUT',
                   body: JSON.stringify({ isBanned: checked }),
                 });
-                message.success('状态更新成功');
+                message.success('User status updated');
                 actionRef.current?.reload();
-              } catch {}
+              } catch (error: unknown) {
+                message.error(getErrorMessage(error, 'Failed to update user status'));
+              }
             }}
           />
 
@@ -95,25 +123,27 @@ export default function UserListPage() {
               setPasswordModalVisible(true);
             }}
           >
-            <KeyOutlined /> 改密
+            <KeyOutlined /> Reset Password
           </a>
 
           <Popconfirm
-            title="确定要删除该用户吗？"
-            description="此操作不可恢复！"
+            title="Delete this user?"
+            description="This action cannot be undone."
             onConfirm={async () => {
               try {
                 await request(`/admin/v1/users/${record._id}`, { method: 'DELETE' });
-                message.success('用户已删除');
+                message.success('User deleted');
                 actionRef.current?.reload();
-              } catch {}
+              } catch (error: unknown) {
+                message.error(getErrorMessage(error, 'Failed to delete user'));
+              }
             }}
-            okText="删除"
-            cancelText="取消"
+            okText="Delete"
+            cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
             <a style={{ color: '#ff4d4f' }}>
-              <DeleteOutlined /> 删除
+              <DeleteOutlined /> Delete
             </a>
           </Popconfirm>
         </Space>
@@ -122,39 +152,52 @@ export default function UserListPage() {
   ];
 
   return (
-    <PageContainer title="用户列表" subTitle="管理前台用户">
+    <PageContainer title="Users" subTitle="Manage frontend users">
+      <PageRequestErrorAlert
+        message="Unable to load users"
+        description={errorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<UserItem>
-        headerTitle="用户数据"
+        headerTitle="User Records"
         actionRef={actionRef}
         rowKey="_id"
-        search={{ labelWidth: 'auto' }}
         cardBordered
+        {...tableState}
         toolBarRender={() => [
           <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            新建用户
+            Create User
           </Button>,
         ]}
         request={async (params) => {
-          const { current, pageSize, username } = params as any;
-          const res = await request('/admin/v1/users', {
-            params: {
-              page: current || 1,
-              limit: pageSize || 20,
-              q: username || '',
-            },
-          });
-          return {
-            data: res.items,
-            success: true,
-            total: res.total,
-          };
+          const query = params as TableRequestParams;
+          setHasSearch(Boolean(query.username));
+
+          try {
+            const res = await request<UserListResponse>('/admin/v1/users', {
+              params: {
+                page: query.current || 1,
+                limit: query.pageSize || 20,
+                q: query.username || '',
+              },
+            });
+            setErrorMessage(null);
+            return {
+              data: res.items,
+              success: true,
+              total: res.total,
+            };
+          } catch (error: unknown) {
+            setErrorMessage(getErrorMessage(error, 'Failed to load users'));
+            throw error;
+          }
         }}
         columns={columns}
       />
 
-      {/* 新建用户弹窗 */}
-      <ModalForm
-        title="新建前台用户"
+      <ModalForm<CreateUserValues>
+        title="Create Frontend User"
         open={createOpen}
         onOpenChange={setCreateOpen}
         width={420}
@@ -168,31 +211,31 @@ export default function UserListPage() {
                 password: values.password,
               }),
             });
-            message.success('用户创建成功');
+            message.success('User created');
             actionRef.current?.reload();
             return true;
-          } catch {
+          } catch (error: unknown) {
+            message.error(getErrorMessage(error, 'Failed to create user'));
             return false;
           }
         }}
       >
         <ProFormText
           name="username"
-          label="用户名"
-          placeholder="至少4个字符"
-          rules={[{ required: true, message: '必填' }, { min: 4, message: '至少4个字符' }]}
+          label="Username"
+          placeholder="At least 4 characters"
+          rules={[{ required: true, message: 'Required' }, { min: 4, message: 'At least 4 characters' }]}
         />
         <ProFormText.Password
           name="password"
-          label="初始密码"
-          placeholder="至少8个字符"
-          rules={[{ required: true, message: '必填' }, { min: 8, message: '至少8个字符' }]}
+          label="Initial Password"
+          placeholder="At least 8 characters"
+          rules={[{ required: true, message: 'Required' }, { min: 8, message: 'At least 8 characters' }]}
         />
       </ModalForm>
 
-      {/* 修改密码弹窗 */}
-      <ModalForm
-        title={`重置密码: ${currentUser?.username}`}
+      <ModalForm<ResetPasswordValues>
+        title={`Reset Password: ${currentUser?.username ?? ''}`}
         open={passwordModalVisible}
         onOpenChange={setPasswordModalVisible}
         width={400}
@@ -204,18 +247,19 @@ export default function UserListPage() {
               method: 'PUT',
               body: JSON.stringify({ password: values.newPassword }),
             });
-            message.success('密码修改成功');
+            message.success('Password reset');
             return true;
-          } catch {
+          } catch (error: unknown) {
+            message.error(getErrorMessage(error, 'Failed to reset password'));
             return false;
           }
         }}
       >
         <ProFormText.Password
           name="newPassword"
-          label="新密码"
-          placeholder="至少8个字符"
-          rules={[{ required: true, message: '必填' }, { min: 8, message: '至少8个字符' }]}
+          label="New Password"
+          placeholder="At least 8 characters"
+          rules={[{ required: true, message: 'Required' }, { min: 8, message: 'At least 8 characters' }]}
         />
       </ModalForm>
     </PageContainer>

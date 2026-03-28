@@ -1,7 +1,7 @@
 import { PageContainer, ProTable, type ProColumns, type ActionType, ModalForm, ProFormTextArea } from '@ant-design/pro-components';
 import { Button, Modal, Tag, message, Space, Alert } from 'antd';
 import { useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { getErrorMessage, request } from '../../services/request';
 
 type Item = {
   blueprintId: string;
@@ -17,6 +17,33 @@ type Item = {
   outputQty?: number;
 };
 
+type BlueprintPayload = Record<string, unknown>;
+
+type BlueprintListParams = {
+  current?: number;
+  pageSize?: number;
+  q?: string;
+  category?: string;
+  generation?: string;
+  tag?: string;
+};
+
+type BlueprintListResp = {
+  items: Item[];
+  total: number;
+};
+
+type BlueprintImportResp = {
+  itemsInserted: number;
+  skipped: number;
+};
+
+type BlueprintWriteResp = {
+  mode?: string;
+  blueprintId: string;
+  warnings?: string[];
+};
+
 export default function DataLegendaryBlueprintsPage() {
   const actionRef = useRef<ActionType>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -27,7 +54,7 @@ export default function DataLegendaryBlueprintsPage() {
   const [editingJsonText, setEditingJsonText] = useState<string>('');
 
   const [payloadOpen, setPayloadOpen] = useState(false);
-  const [payload, setPayload] = useState<any>(null);
+  const [payload, setPayload] = useState<BlueprintPayload | null>(null);
 
   const columns: ProColumns<Item>[] = [
     { title: '关键词', dataIndex: 'q', hideInTable: true },
@@ -61,7 +88,9 @@ export default function DataLegendaryBlueprintsPage() {
           <Button
             type="link"
             onClick={async () => {
-              const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`);
+              const res = await request<BlueprintPayload>(
+                `/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`
+              );
               setPayload(res);
               setPayloadOpen(true);
             }}
@@ -71,7 +100,9 @@ export default function DataLegendaryBlueprintsPage() {
           <Button
             type="link"
             onClick={async () => {
-              const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`);
+              const res = await request<BlueprintPayload>(
+                `/admin/v1/data/legendary-blueprints/${encodeURIComponent(r.blueprintId)}`
+              );
               setEditingId(r.blueprintId);
               setEditingJsonText(JSON.stringify(res, null, 2));
               setEditOpen(true);
@@ -103,8 +134,8 @@ export default function DataLegendaryBlueprintsPage() {
         cardBordered
         columns={columns}
         request={async (params) => {
-          const { current, pageSize, q, category, generation, tag } = params as any;
-          const res = await request('/admin/v1/data/legendary-blueprints', {
+          const { current, pageSize, q, category, generation, tag } = params as BlueprintListParams;
+          const res = await request<BlueprintListResp>('/admin/v1/data/legendary-blueprints', {
             params: {
               page: current || 1,
               limit: pageSize || 20,
@@ -146,14 +177,15 @@ export default function DataLegendaryBlueprintsPage() {
               onOk: async () => {
                 try {
                   const json = JSON.parse(values.jsonText || '');
-                  const res = await request('/admin/v1/data/legendary-blueprints/import', {
+                  const res = await request<BlueprintImportResp>('/admin/v1/data/legendary-blueprints/import', {
                     method: 'POST',
                     body: JSON.stringify(json),
                   });
                   message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
                   actionRef.current?.reload();
                   resolve(true);
-                } catch (e: any) {
+                } catch (error: unknown) {
+                  const e = { message: getErrorMessage(error, 'JSON import failed') };
                   message.error(e?.message || 'JSON 解析/导入失败');
                   resolve(false);
                 }
@@ -187,7 +219,7 @@ export default function DataLegendaryBlueprintsPage() {
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request('/admin/v1/data/legendary-blueprints/upsert', {
+            const res = await request<BlueprintWriteResp>('/admin/v1/data/legendary-blueprints/upsert', {
               method: 'POST',
               body: JSON.stringify(json),
             });
@@ -197,7 +229,8 @@ export default function DataLegendaryBlueprintsPage() {
             }
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
+          } catch (error: unknown) {
+            const e = { message: getErrorMessage(error, 'JSON import failed') };
             message.error(e?.message || 'JSON 解析/导入失败');
             return false;
           }
@@ -221,17 +254,21 @@ export default function DataLegendaryBlueprintsPage() {
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request(`/admin/v1/data/legendary-blueprints/${encodeURIComponent(editingId)}`, {
-              method: 'PUT',
-              body: JSON.stringify(json),
-            });
+            const res = await request<BlueprintWriteResp>(
+              `/admin/v1/data/legendary-blueprints/${encodeURIComponent(editingId)}`,
+              {
+                method: 'PUT',
+                body: JSON.stringify(json),
+              }
+            );
             message.success(`已保存：${res.blueprintId}`);
             if (Array.isArray(res.warnings) && res.warnings.length) {
               message.warning(res.warnings.slice(0, 3).join('；'));
             }
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
+          } catch (error: unknown) {
+            const e = { message: getErrorMessage(error, 'JSON save failed') };
             message.error(e?.message || 'JSON 解析/保存失败');
             return false;
           }

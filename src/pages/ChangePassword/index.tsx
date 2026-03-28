@@ -1,64 +1,131 @@
-import { PageContainer, ProForm, ProFormText } from '@ant-design/pro-components';
-import { message, Alert } from 'antd';
-import { request, TOKEN_KEY } from '../../services/request';
+import { PageContainer } from '@ant-design/pro-components';
+import { Alert, Button, Form, Input, message } from 'antd';
+import { useState } from 'react';
+import { TOKEN_KEY, getErrorMessage, request } from '../../services/request';
+
+type ChangePasswordValues = {
+  oldPassword: string;
+  newPassword: string;
+  newPassword2: string;
+};
 
 export default function ChangePasswordPage() {
+  const [form] = Form.useForm<ChangePasswordValues>();
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleFinish = async (values: ChangePasswordValues) => {
+    setSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await request<{ success: boolean; token: string }>('/admin/v1/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          oldPassword: values.oldPassword,
+          newPassword: values.newPassword,
+        }),
+      });
+
+      localStorage.setItem(TOKEN_KEY, res.token);
+      message.success('Password updated');
+
+      // Reload so BasicLayout fetches a fresh auth context with mustChangePassword cleared.
+      window.location.href = '/dashboard';
+    } catch (error: unknown) {
+      setErrorMessage(getErrorMessage(error, 'Failed to update password'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <PageContainer title="修改密码" subTitle="为保障安全，请设置新密码">
-      <div style={{ maxWidth: 420 }}>
+    <PageContainer
+      title="Change Password"
+      subTitle="Set a new password before continuing to the rest of the admin workspace"
+    >
+      <div
+        style={{
+          maxWidth: 560,
+          padding: 24,
+          borderRadius: 20,
+          border: '1px solid #f0f0f0',
+          background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.06)',
+        }}
+      >
         <Alert
           type="warning"
           showIcon
-          message="提示"
-          description="若管理员被重置密码或系统要求改密，你将无法访问其它功能，直到完成改密。"
+          message="Password update required"
+          description="If your account was reset by another administrator or marked for a mandatory update, you must finish this step before accessing any other admin page."
           style={{ marginBottom: 16 }}
         />
 
-        <ProForm
-          onFinish={async (values) => {
-            const res = await request<{ success: boolean; token: string }>('/admin/v1/auth/change-password', {
-              method: 'POST',
-              body: JSON.stringify({
-                oldPassword: values.oldPassword,
-                newPassword: values.newPassword,
-              }),
-            });
+        <Alert
+          type="info"
+          showIcon
+          message="What happens next"
+          description="After a successful update, the page will refresh and return you to the dashboard with the new token."
+          style={{ marginBottom: 16 }}
+        />
 
-            localStorage.setItem(TOKEN_KEY, res.token);
-            message.success('密码修改成功');
+        {errorMessage ? (
+          <Alert
+            type="error"
+            showIcon
+            message="Unable to update password"
+            description={errorMessage}
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
 
-            // 重新加载，让 BasicLayout 重新拉 me（mustChangePassword=false）
-            window.location.href = '/dashboard';
-          }}
-        >
-          <ProFormText.Password
+        <Form<ChangePasswordValues> form={form} layout="vertical" onFinish={handleFinish}>
+          <Form.Item
             name="oldPassword"
-            label="旧密码"
-            rules={[{ required: true, message: '请输入旧密码' }]}
-          />
-          <ProFormText.Password
+            label="Current password"
+            rules={[{ required: true, message: 'Please enter your current password' }]}
+          >
+            <Input.Password size="large" autoComplete="current-password" />
+          </Form.Item>
+
+          <Form.Item
             name="newPassword"
-            label="新密码"
+            label="New password"
             rules={[
-              { required: true, message: '请输入新密码' },
-              { min: 10, message: '至少10位' },
+              { required: true, message: 'Please enter a new password' },
+              { min: 10, message: 'Use at least 10 characters' },
             ]}
-          />
-          <ProFormText.Password
+          >
+            <Input.Password size="large" autoComplete="new-password" />
+          </Form.Item>
+
+          <Form.Item
             name="newPassword2"
-            label="确认新密码"
+            label="Confirm new password"
             dependencies={['newPassword']}
             rules={[
-              { required: true, message: '请再次输入新密码' },
+              { required: true, message: 'Please confirm the new password' },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                  return Promise.reject(new Error('两次输入的新密码不一致'));
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve();
+                  }
+
+                  return Promise.reject(new Error('The confirmation does not match the new password'));
                 },
               }),
             ]}
-          />
-        </ProForm>
+          >
+            <Input.Password size="large" autoComplete="new-password" />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit" loading={submitting}>
+              Save new password
+            </Button>
+          </Form.Item>
+        </Form>
       </div>
     </PageContainer>
   );

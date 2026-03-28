@@ -11,7 +11,9 @@ import {
 } from '@ant-design/pro-components';
 import { Button, message, Popconfirm, Space, Tag } from 'antd';
 import { useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { getErrorMessage, request } from '../../services/request';
 
 type Item = {
   _id: string;
@@ -26,6 +28,22 @@ type Item = {
   updatedAt: string;
 };
 
+type RecommendedListParams = {
+  current?: number;
+  pageSize?: number;
+  q?: string;
+};
+
+type RecommendedListResp = {
+  items: Item[];
+  total: number;
+};
+
+type RecommendedImportResp = {
+  itemsInserted: number;
+  skipped: number;
+};
+
 export default function DataResourcesRecommendedPage() {
   const actionRef = useRef<ActionType>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -33,6 +51,14 @@ export default function DataResourcesRecommendedPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [current, setCurrent] = useState<Item | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasSearch, setHasSearch] = useState(false);
+  const tableState = getFilterAwareTableProps({
+    hasFilters: hasSearch,
+    searchText: 'Search resources',
+    filteredEmptyText: 'No recommended resources match the current search.',
+    emptyText: 'No recommended resources have been added yet.',
+  });
 
   const columns: ProColumns<Item>[] = [
     { title: '关键词', dataIndex: 'q', hideInTable: true },
@@ -108,21 +134,36 @@ export default function DataResourcesRecommendedPage() {
         </Button>,
       ]}
     >
+      <PageRequestErrorAlert
+        message="Unable to load recommended resources"
+        description={errorMessage}
+        onRetry={() => actionRef.current?.reload()}
+      />
+
       <ProTable<Item>
         actionRef={actionRef}
         rowKey="_id"
         cardBordered
         columns={columns}
+        {...tableState}
         request={async (params) => {
-          const { current, pageSize, q } = params as any;
-          const res = await request('/admin/v1/data/resources-recommended/items', {
-            params: {
-              page: current || 1,
-              limit: pageSize || 20,
-              q: q || '',
-            },
-          });
-          return { data: res.items, total: res.total, success: true };
+          const { current, pageSize, q } = params as RecommendedListParams;
+          setHasSearch(Boolean(q));
+
+          try {
+            const res = await request<RecommendedListResp>('/admin/v1/data/resources-recommended/items', {
+              params: {
+                page: current || 1,
+                limit: pageSize || 20,
+                q: q || '',
+              },
+            });
+            setErrorMessage(null);
+            return { data: res.items, total: res.total, success: true };
+          } catch (error: unknown) {
+            setErrorMessage(getErrorMessage(error, 'Failed to load recommended resources'));
+            throw error;
+          }
         }}
       />
 
@@ -226,14 +267,15 @@ export default function DataResourcesRecommendedPage() {
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request('/admin/v1/data/resources-recommended/import', {
+            const res = await request<RecommendedImportResp>('/admin/v1/data/resources-recommended/import', {
               method: 'POST',
               body: JSON.stringify(json),
             });
             message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
+          } catch (error: unknown) {
+            const e = { message: getErrorMessage(error, 'JSON import failed') };
             message.error(e?.message || 'JSON 解析/导入失败');
             return false;
           }

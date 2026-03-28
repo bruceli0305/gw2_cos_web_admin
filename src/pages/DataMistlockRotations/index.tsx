@@ -11,7 +11,7 @@ import {
 } from '@ant-design/pro-components';
 import { Button, message, Space, Tag, Typography } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { getErrorMessage, request } from '../../services/request';
 
 type Inst = {
   idx: number;
@@ -27,6 +27,35 @@ type Item = {
   updatedAt?: string;
 };
 
+type RotationConfig = {
+  rotationOffset?: number;
+  calibratedAt?: string;
+};
+
+type RotationListResp = {
+  items?: Item[];
+};
+
+type SyncResp = {
+  rotations?: {
+    upserted?: number;
+    skippedManual?: number;
+  };
+};
+
+type AutoCalibrateValues = {
+  date?: unknown;
+  scale?: number | string;
+  idx1?: number | string;
+  idx2?: number | string;
+  idx3?: number | string;
+  dryRun?: boolean;
+};
+
+type AutoCalibrateResp = {
+  rotationOffset?: number;
+};
+
 export default function DataMistlockRotationsPage() {
   const actionRef = useRef<ActionType>(null);
   const [syncLoading, setSyncLoading] = useState(false);
@@ -34,7 +63,7 @@ export default function DataMistlockRotationsPage() {
   const [pasteLoading, setPasteLoading] = useState(false);
 
   const [cfgLoading, setCfgLoading] = useState(false);
-  const [cfg, setCfg] = useState<{ rotationOffset?: number; calibratedAt?: string } | null>(null);
+  const [cfg, setCfg] = useState<RotationConfig | null>(null);
   const [calibOpen, setCalibOpen] = useState(false);
   const [calibLoading, setCalibLoading] = useState(false);
 
@@ -104,12 +133,16 @@ export default function DataMistlockRotationsPage() {
     setSyncLoading(true);
     try {
       // 兼容后端 body 校验：显式发空对象
-      const res = await request('/admin/v1/data/mistlock-instabilities/sync-invisi', { method: 'POST', body: '{}' });
+      const res = await request<SyncResp>('/admin/v1/data/mistlock-instabilities/sync-invisi', {
+        method: 'POST',
+        body: '{}',
+      });
       message.success(
         `同步完成：轮换 upsert ${res.rotations?.upserted || 0}（跳过手工 ${res.rotations?.skippedManual || 0}）`
       );
       actionRef.current?.reload();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = { message: getErrorMessage(error, 'Sync failed') };
       message.error(e?.message || '同步失败');
     } finally {
       setSyncLoading(false);
@@ -119,7 +152,7 @@ export default function DataMistlockRotationsPage() {
   const refreshConfig = async () => {
     setCfgLoading(true);
     try {
-      const res = await request('/admin/v1/data/mistlock-rotations/config');
+      const res = await request<RotationConfig>('/admin/v1/data/mistlock-rotations/config');
       setCfg(res || null);
     } catch {
       setCfg(null);
@@ -132,7 +165,7 @@ export default function DataMistlockRotationsPage() {
     refreshConfig();
   }, []);
 
-  const handleAutoCalibrate = async (values: any) => {
+  const handleAutoCalibrate = async (values: AutoCalibrateValues) => {
     const date = values?.date;
     const scale = Number(values?.scale);
     const instabilities = [values?.idx1, values?.idx2, values?.idx3].map((x) => Number(x));
@@ -153,7 +186,7 @@ export default function DataMistlockRotationsPage() {
 
     setCalibLoading(true);
     try {
-      const res = await request('/admin/v1/data/mistlock-rotations/auto-calibrate', {
+      const res = await request<AutoCalibrateResp>('/admin/v1/data/mistlock-rotations/auto-calibrate', {
         method: 'POST',
         body: JSON.stringify({ date, scale, instabilities, dryRun }),
       });
@@ -167,7 +200,8 @@ export default function DataMistlockRotationsPage() {
       }
       setCalibOpen(false);
       return true;
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = { message: getErrorMessage(error, 'Calibration failed') };
       message.error(e?.message || '校准失败');
       return false;
     } finally {
@@ -181,17 +215,18 @@ export default function DataMistlockRotationsPage() {
       message.error('请粘贴 JSON 内容');
       return false;
     }
-    let obj: any;
+    let parsed: unknown;
     try {
-      obj = JSON.parse(jsonText);
+      parsed = JSON.parse(jsonText) as unknown;
     } catch {
       message.error('JSON 解析失败，请检查格式是否正确');
       return false;
     }
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       message.error('JSON 顶层必须是对象');
       return false;
     }
+    const obj = parsed as Record<string, unknown>;
     const hasInstabilities = Object.prototype.hasOwnProperty.call(obj, 'instabilities');
     const hasDetails = Object.prototype.hasOwnProperty.call(obj, 'instability_details');
     if (!hasInstabilities || !hasDetails) {
@@ -201,7 +236,7 @@ export default function DataMistlockRotationsPage() {
 
     setPasteLoading(true);
     try {
-      const res = await request('/admin/v1/data/mistlock-instabilities/sync-invisi', {
+      const res = await request<SyncResp>('/admin/v1/data/mistlock-instabilities/sync-invisi', {
         method: 'POST',
         body: JSON.stringify(obj),
       });
@@ -211,7 +246,8 @@ export default function DataMistlockRotationsPage() {
       actionRef.current?.reload();
       setPasteOpen(false);
       return true;
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = { message: getErrorMessage(error, 'Update failed') };
       message.error(e?.message || '更新失败');
       return false;
     } finally {
@@ -251,7 +287,7 @@ export default function DataMistlockRotationsPage() {
           if (params?.rotationIndex !== undefined && params.rotationIndex !== '') qs.set('rotationIndex', String(params.rotationIndex));
           if (params?.scale !== undefined && params.scale !== '') qs.set('scale', String(params.scale));
           const url = `/admin/v1/data/mistlock-rotations${qs.toString() ? `?${qs.toString()}` : ''}`;
-          const res = await request(url);
+          const res = await request<RotationListResp>(url);
           return { data: res.items || [], success: true };
         }}
       />

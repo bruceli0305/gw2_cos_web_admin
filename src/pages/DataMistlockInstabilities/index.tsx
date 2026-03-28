@@ -9,8 +9,8 @@ import {
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import { Button, message, Space, Typography } from 'antd';
-import { useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
+import { getErrorMessage, request } from '../../services/request';
 
 type Item = {
   _id: string;
@@ -22,6 +22,28 @@ type Item = {
   tips?: { zh?: string; en?: string };
   isEnabled: boolean;
   updatedAt?: string;
+};
+
+type MistlockInstabilitiesListResp = {
+  items?: Item[];
+};
+
+type SyncResp = {
+  instabilities?: {
+    upserted?: number;
+  };
+  rotations?: {
+    upserted?: number;
+    skippedManual?: number;
+  };
+};
+
+type EditFormValues = {
+  nameZh?: string;
+  iconUrl?: string;
+  descZh?: string;
+  tipsZh?: string;
+  isEnabled?: boolean;
 };
 
 export default function DataMistlockInstabilitiesPage() {
@@ -49,10 +71,8 @@ export default function DataMistlockInstabilitiesPage() {
                 src={r.iconUrl}
                 alt="icon"
                 style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain' }}
-                onError={(e) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const el = e.target as any;
-                  if (el) el.style.display = 'none';
+                onError={(event: SyntheticEvent<HTMLImageElement>) => {
+                  event.currentTarget.style.display = 'none';
                 }}
               />
               <span>已填写</span>
@@ -115,12 +135,16 @@ export default function DataMistlockInstabilitiesPage() {
     setSyncLoading(true);
     try {
       // 兼容后端 body 校验：显式发空对象
-      const res = await request('/admin/v1/data/mistlock-instabilities/sync-invisi', { method: 'POST', body: '{}' });
+      const res = await request<SyncResp>('/admin/v1/data/mistlock-instabilities/sync-invisi', {
+        method: 'POST',
+        body: '{}',
+      });
       message.success(
         `同步完成：异变 upsert ${res.instabilities?.upserted || 0}，轮换 upsert ${res.rotations?.upserted || 0}（跳过手工 ${res.rotations?.skippedManual || 0}）`
       );
       actionRef.current?.reload();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = { message: getErrorMessage(error, 'Sync failed') };
       message.error(e?.message || '同步失败');
     } finally {
       setSyncLoading(false);
@@ -133,17 +157,18 @@ export default function DataMistlockInstabilitiesPage() {
       message.error('请粘贴 JSON 内容');
       return false;
     }
-    let obj: any;
+    let parsed: unknown;
     try {
-      obj = JSON.parse(jsonText);
+      parsed = JSON.parse(jsonText) as unknown;
     } catch {
       message.error('JSON 解析失败，请检查格式是否正确');
       return false;
     }
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       message.error('JSON 顶层必须是对象');
       return false;
     }
+    const obj = parsed as Record<string, unknown>;
     const hasInstabilities = Object.prototype.hasOwnProperty.call(obj, 'instabilities');
     const hasDetails = Object.prototype.hasOwnProperty.call(obj, 'instability_details');
     if (!hasInstabilities || !hasDetails) {
@@ -153,7 +178,7 @@ export default function DataMistlockInstabilitiesPage() {
 
     setPasteLoading(true);
     try {
-      const res = await request('/admin/v1/data/mistlock-instabilities/sync-invisi', {
+      const res = await request<SyncResp>('/admin/v1/data/mistlock-instabilities/sync-invisi', {
         method: 'POST',
         body: JSON.stringify(obj),
       });
@@ -163,7 +188,8 @@ export default function DataMistlockInstabilitiesPage() {
       actionRef.current?.reload();
       setPasteOpen(false);
       return true;
-    } catch (e: any) {
+    } catch (error: unknown) {
+      const e = { message: getErrorMessage(error, 'Update failed') };
       message.error(e?.message || '更新失败');
       return false;
     } finally {
@@ -191,7 +217,7 @@ export default function DataMistlockInstabilitiesPage() {
         search={false}
         columns={columns}
         request={async () => {
-          const res = await request('/admin/v1/data/mistlock-instabilities');
+          const res = await request<MistlockInstabilitiesListResp>('/admin/v1/data/mistlock-instabilities');
           return { data: res.items || [], success: true };
         }}
       />
@@ -208,7 +234,7 @@ export default function DataMistlockInstabilitiesPage() {
           tipsZh: current?.tips?.zh || '',
           isEnabled: current?.isEnabled ?? true,
         }}
-        onFinish={async (values) => {
+        onFinish={async (values: EditFormValues) => {
           if (!current) return false;
           await request(`/admin/v1/data/mistlock-instabilities/items/${current._id}`, {
             method: 'PUT',

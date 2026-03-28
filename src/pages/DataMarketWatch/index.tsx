@@ -10,7 +10,9 @@ import {
 } from '@ant-design/pro-components';
 import { Alert, Button, message, Popconfirm, Space, Tag, Modal } from 'antd';
 import { useMemo, useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getFilterAwareTableProps } from '../../components/tableState';
+import { getErrorMessage, request } from '../../services/request';
 
 type PoolItem = {
   itemId: number;
@@ -29,8 +31,16 @@ type PoolItem = {
   note?: string;
 };
 
+type LowFreqReasonValue = string | number | boolean | null;
+
+type LowFreqReason = {
+  type: string;
+  value?: LowFreqReasonValue;
+  threshold?: LowFreqReasonValue;
+};
+
 type LowFreqPoolItem = PoolItem & {
-  reasons?: Array<{ type: string; value: any; threshold?: any }>;
+  reasons?: LowFreqReason[];
 };
 
 type TaskRun = {
@@ -71,13 +81,54 @@ type RunNowResp = {
   failSample?: Array<{ itemId: number; reason: string }>;
 };
 
+type FailPayload = {
+  title: string;
+  data: unknown;
+};
+
+type PoolQueryParams = {
+  current?: number;
+  pageSize?: number;
+  itemId?: number | string;
+  pinned?: boolean | string;
+};
+
+type TaskQueryParams = {
+  taskName?: string;
+};
+
+type AddPoolFormValues = {
+  itemId?: string;
+  pinned?: boolean;
+};
+
+function formatRunSummary(actionLabel: string, result: RunNowResp) {
+  const parts: string[] = [];
+  if (result.status) parts.push(result.status);
+
+  const counts: string[] = [];
+  if (typeof result.successCount === 'number') counts.push(`ok ${result.successCount}`);
+  if (typeof result.failCount === 'number') counts.push(`failed ${result.failCount}`);
+  if (counts.length) parts.push(counts.join(' / '));
+
+  return parts.length ? `${actionLabel} finished: ${parts.join(' | ')}` : `${actionLabel} finished`;
+}
+
+function formatLowFrequencyReason(reason: LowFreqReason) {
+  if (reason.type === 'LOW_FOLLOWER') {
+    return `Follower count <= ${reason.threshold} (current ${reason.value})`;
+  }
+
+  return reason.type;
+}
+
 export default function DataMarketWatchPage() {
   const poolActionRef = useRef<ActionType>(null);
   const taskActionRef = useRef<ActionType>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [failOpen, setFailOpen] = useState(false);
-  const [failPayload, setFailPayload] = useState<{ title: string; data: any } | null>(null);
+  const [failPayload, setFailPayload] = useState<FailPayload | null>(null);
 
   const [poolMeta, setPoolMeta] = useState<{ total: number; max: number } | null>(null);
 
@@ -85,8 +136,13 @@ export default function DataMarketWatchPage() {
   const [lowfreqRows, setLowfreqRows] = useState<LowFreqPoolItem[]>([]);
   const [lowfreqSelected, setLowfreqSelected] = useState<number[]>([]);
   const [lowfreqLoading, setLowfreqLoading] = useState(false);
+  const [snapshotRunLoading, setSnapshotRunLoading] = useState(false);
   const [metaSyncLoading, setMetaSyncLoading] = useState(false);
   const [historySyncItemId, setHistorySyncItemId] = useState<number | null>(null);
+  const [poolErrorMessage, setPoolErrorMessage] = useState<string | null>(null);
+  const [taskErrorMessage, setTaskErrorMessage] = useState<string | null>(null);
+  const [lowfreqErrorMessage, setLowfreqErrorMessage] = useState<string | null>(null);
+  const [hasPoolFilters, setHasPoolFilters] = useState(false);
 
   async function loadLowfreq() {
     setLowfreqLoading(true);
@@ -96,6 +152,9 @@ export default function DataMarketWatchPage() {
       });
       setLowfreqRows(res.items);
       setLowfreqSelected([]);
+      setLowfreqErrorMessage(null);
+    } catch (error: unknown) {
+      setLowfreqErrorMessage(getErrorMessage(error, 'Failed to load low-frequency candidates'));
     } finally {
       setLowfreqLoading(false);
     }
@@ -104,93 +163,96 @@ export default function DataMarketWatchPage() {
   const poolColumns: ProColumns<PoolItem>[] = [
     { title: 'ItemID', dataIndex: 'itemId', width: 120, copyable: true },
     {
-      title: '名称',
+      title: 'Name',
       dataIndex: 'nameZh',
       search: false,
       ellipsis: true,
-      render: (_, r) => r.nameZh || r.nameEn || '-',
+      render: (_, record) => record.nameZh || record.nameEn || '-',
     },
     {
-      title: '置顶',
+      title: 'Pinned',
       dataIndex: 'pinned',
       width: 90,
       valueType: 'select',
       valueEnum: {
-        true: { text: '是' },
-        false: { text: '否' },
+        true: { text: 'Yes' },
+        false: { text: 'No' },
       },
-      render: (_, r) => (r.pinned ? <Tag color="gold">置顶</Tag> : <Tag>否</Tag>),
+      render: (_, record) => (record.pinned ? <Tag color="gold">Pinned</Tag> : <Tag>Standard</Tag>),
     },
-    { title: '关注数', dataIndex: 'followerCount', width: 90, search: false },
+    { title: 'Followers', dataIndex: 'followerCount', width: 90, search: false },
     {
-      title: '快照状态',
+      title: 'Snapshot',
       dataIndex: 'snapshotStatus',
       width: 110,
       search: false,
-      render: (_, r) => {
-        if (r.snapshotStatus === 'ERROR') return <Tag color="red">ERROR</Tag>;
-        if (r.snapshotStatus === 'OK') return <Tag color="green">OK</Tag>;
-        return <Tag>未知</Tag>;
+      render: (_, record) => {
+        if (record.snapshotStatus === 'ERROR') return <Tag color="red">ERROR</Tag>;
+        if (record.snapshotStatus === 'OK') return <Tag color="green">OK</Tag>;
+        return <Tag>Unknown</Tag>;
       },
     },
     {
-      title: '最近快照',
+      title: 'Last Snapshot',
       dataIndex: 'lastSnapshotAt',
       valueType: 'dateTime',
       width: 170,
       search: false,
     },
     {
-      title: '快照错误',
+      title: 'Snapshot Error',
       dataIndex: 'snapshotError',
       ellipsis: true,
       search: false,
-      render: (_, r) => {
-        if (!r.snapshotError) return '-';
+      render: (_, record) => {
+        if (!record.snapshotError) return '-';
         return (
           <Button
             type="link"
             onClick={() => {
-              setFailPayload({ title: `快照错误 · ItemID ${r.itemId}`, data: { snapshotError: r.snapshotError } });
+              setFailPayload({
+                title: `Snapshot error · ItemID ${record.itemId}`,
+                data: { snapshotError: record.snapshotError },
+              });
               setFailOpen(true);
             }}
           >
-            查看
+            View
           </Button>
         );
       },
     },
     {
-      title: '日线同步',
+      title: 'History Sync',
       dataIndex: 'historySyncStatus',
       width: 120,
       search: false,
-      render: (_, r) => {
-        const v = r.historySyncStatus || 'NONE';
-        if (v === 'SUCCESS') return <Tag color="green">已同步</Tag>;
-        if (v === 'RUNNING') return <Tag color="blue">同步中</Tag>;
-        if (v === 'FAILED') return <Tag color="red">失败</Tag>;
-        return <Tag>未同步</Tag>;
+      render: (_, record) => {
+        const status = record.historySyncStatus || 'NONE';
+        if (status === 'SUCCESS') return <Tag color="green">Synced</Tag>;
+        if (status === 'RUNNING') return <Tag color="blue">Running</Tag>;
+        if (status === 'FAILED') return <Tag color="red">Failed</Tag>;
+        return <Tag>Not started</Tag>;
       },
     },
-    { title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
+    { title: 'Updated At', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 220,
-      render: (_, r) => (
+      render: (_, record) => (
         <Space wrap>
           <Button
             type="link"
-            loading={historySyncItemId === r.itemId}
+            loading={historySyncItemId === record.itemId}
             onClick={async () => {
-              setHistorySyncItemId(r.itemId);
+              setHistorySyncItemId(record.itemId);
               try {
-                const res = await request<RunNowResp>(`/admin/v1/data/market-watch/history/sync/${r.itemId}`, {
+                const res = await request<RunNowResp>(`/admin/v1/data/market-watch/history/sync/${record.itemId}`, {
                   method: 'POST',
                   params: { days: 365 },
                 });
-                message.success(`历史同步完成：${res.status}（ok ${res.successCount} / fail ${res.failCount}）`);
+                message.success(formatRunSummary('History sync', res));
                 poolActionRef.current?.reload();
                 taskActionRef.current?.reload();
               } finally {
@@ -198,37 +260,37 @@ export default function DataMarketWatchPage() {
               }
             }}
           >
-            同步历史数据
+            Sync History
           </Button>
 
           <Button
             type="link"
             onClick={async () => {
-              await request(`/admin/v1/data/market-watch/pool/${r.itemId}`, {
+              await request(`/admin/v1/data/market-watch/pool/${record.itemId}`, {
                 method: 'PATCH',
-                body: JSON.stringify({ pinned: !r.pinned }),
+                body: JSON.stringify({ pinned: !record.pinned }),
               });
-              message.success(r.pinned ? '已取消置顶' : '已置顶');
+              message.success(record.pinned ? 'Item unpinned' : 'Item pinned');
               poolActionRef.current?.reload();
             }}
           >
-            {r.pinned ? '取消置顶' : '置顶'}
+            {record.pinned ? 'Unpin' : 'Pin'}
           </Button>
 
           <Popconfirm
-            title="移除该物品出采集池？"
-            description="移除后将停止定时采集该 itemId 的快照数据。"
-            okText="移除"
+            title="Remove this item from the watch pool?"
+            description="Scheduled snapshots for this item will stop. User follow relationships are not deleted."
+            okText="Remove"
             okButtonProps={{ danger: true }}
-            cancelText="取消"
+            cancelText="Cancel"
             onConfirm={async () => {
-              await request(`/admin/v1/data/market-watch/pool/${r.itemId}`, { method: 'DELETE' });
-              message.success('已移除');
+              await request(`/admin/v1/data/market-watch/pool/${record.itemId}`, { method: 'DELETE' });
+              message.success('Item removed from pool');
               poolActionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              移除
+              Remove
             </Button>
           </Popconfirm>
         </Space>
@@ -239,18 +301,18 @@ export default function DataMarketWatchPage() {
   const taskColumns: ProColumns<TaskRun>[] = useMemo(
     () => [
       {
-        title: '任务',
+        title: 'Task',
         dataIndex: 'taskName',
         hideInTable: true,
         valueType: 'select',
         valueEnum: {
-          snapshot_10m: { text: '10分钟快照采集' },
+          snapshot_10m: { text: '10-minute snapshot collection' },
         },
       },
-      { title: '开始时间', dataIndex: 'startedAt', valueType: 'dateTime', width: 180, search: false },
-      { title: '结束时间', dataIndex: 'endedAt', valueType: 'dateTime', width: 180, search: false },
+      { title: 'Started At', dataIndex: 'startedAt', valueType: 'dateTime', width: 180, search: false },
+      { title: 'Ended At', dataIndex: 'endedAt', valueType: 'dateTime', width: 180, search: false },
       {
-        title: '状态',
+        title: 'Status',
         dataIndex: 'status',
         width: 110,
         valueType: 'select',
@@ -259,31 +321,31 @@ export default function DataMarketWatchPage() {
           PARTIAL: { text: 'PARTIAL' },
           FAILED: { text: 'FAILED' },
         },
-        render: (_, r) => {
-          if (r.status === 'SUCCESS') return <Tag color="green">SUCCESS</Tag>;
-          if (r.status === 'PARTIAL') return <Tag color="orange">PARTIAL</Tag>;
+        render: (_, record) => {
+          if (record.status === 'SUCCESS') return <Tag color="green">SUCCESS</Tag>;
+          if (record.status === 'PARTIAL') return <Tag color="orange">PARTIAL</Tag>;
           return <Tag color="red">FAILED</Tag>;
         },
       },
-      { title: '目标', dataIndex: 'targetCount', width: 80, search: false },
-      { title: '成功', dataIndex: 'successCount', width: 80, search: false },
-      { title: '失败', dataIndex: 'failCount', width: 80, search: false },
+      { title: 'Target', dataIndex: 'targetCount', width: 80, search: false },
+      { title: 'Success', dataIndex: 'successCount', width: 80, search: false },
+      { title: 'Failed', dataIndex: 'failCount', width: 80, search: false },
       {
-        title: '失败详情',
+        title: 'Failure Details',
         dataIndex: 'failSample',
         search: false,
-        render: (_, r) => {
-          const list = Array.isArray(r.failSample) ? r.failSample : [];
+        render: (_, record) => {
+          const list = Array.isArray(record.failSample) ? record.failSample : [];
           if (!list.length) return '-';
           return (
             <Button
               type="link"
               onClick={() => {
-                setFailPayload({ title: `失败详情 · ${r.startedAt}`, data: list });
+                setFailPayload({ title: `Failure details · ${record.startedAt}`, data: list });
                 setFailOpen(true);
               }}
             >
-              查看（{list.length}）
+              View ({list.length})
             </Button>
           );
         },
@@ -294,34 +356,40 @@ export default function DataMarketWatchPage() {
 
   const lowfreqColumns: ProColumns<LowFreqPoolItem>[] = [
     { title: 'ItemID', dataIndex: 'itemId', width: 120 },
-    { title: '关注数', dataIndex: 'followerCount', width: 90 },
+    { title: 'Followers', dataIndex: 'followerCount', width: 90 },
     {
-      title: '最近快照',
+      title: 'Last Snapshot',
       dataIndex: 'lastSnapshotAt',
       valueType: 'dateTime',
       width: 170,
     },
     {
-      title: '建议原因',
+      title: 'Suggested Reason',
       dataIndex: 'reasons',
       search: false,
-      render: (_, r) => {
-        const reasons = Array.isArray(r.reasons) ? r.reasons : [];
+      render: (_, record) => {
+        const reasons = Array.isArray(record.reasons) ? record.reasons : [];
         if (!reasons.length) return '-';
-        return reasons
-          .map((x) => {
-            if (x.type === 'LOW_FOLLOWER') return `关注数≤${x.threshold}（当前${x.value}）`;
-            return x.type;
-          })
-          .join('；');
+        return reasons.map(formatLowFrequencyReason).join('; ');
       },
     },
   ];
 
+  const poolTableStateProps = getFilterAwareTableProps({
+    hasFilters: hasPoolFilters,
+    searchText: 'Apply filters',
+    filteredEmptyText: 'No monitored items match the current filters.',
+    emptyText: 'No items are currently in the market watch pool.',
+  });
+
   return (
     <PageContainer
-      title="交易所监控"
-      subTitle={poolMeta ? `采集池 ${poolMeta.total}/${poolMeta.max} · 10分钟快照采集` : '采集池（上限 1000）与 10 分钟快照采集任务'}
+      title="Market Watch Monitor"
+      subTitle={
+        poolMeta
+          ? `Pool usage ${poolMeta.total}/${poolMeta.max} · 10-minute snapshot monitoring`
+          : 'Pool management and 10-minute snapshot monitoring'
+      }
       extra={[
         <Button
           key="refresh"
@@ -330,25 +398,31 @@ export default function DataMarketWatchPage() {
             taskActionRef.current?.reload();
           }}
         >
-          刷新
+          Refresh
         </Button>,
         <Button
           key="run"
+          loading={snapshotRunLoading}
           onClick={async () => {
-            const res = await request<RunNowResp>('/admin/v1/data/market-watch/run/snapshot10m', { method: 'POST' });
-            message.success(`已触发：${res.status}（ok ${res.successCount} / fail ${res.failCount}）`);
-            poolActionRef.current?.reload();
-            taskActionRef.current?.reload();
-            if (res.failSample?.length) {
-              setFailPayload({
-                title: `本次失败详情 · ts ${res.ts}`,
-                data: res.failSample,
-              });
-              setFailOpen(true);
+            setSnapshotRunLoading(true);
+            try {
+              const res = await request<RunNowResp>('/admin/v1/data/market-watch/run/snapshot10m', { method: 'POST' });
+              message.success(formatRunSummary('Snapshot collection', res));
+              poolActionRef.current?.reload();
+              taskActionRef.current?.reload();
+              if (res.failSample?.length) {
+                setFailPayload({
+                  title: `Snapshot collection failures · ${res.ts || 'latest run'}`,
+                  data: res.failSample,
+                });
+                setFailOpen(true);
+              }
+            } finally {
+              setSnapshotRunLoading(false);
             }
           }}
         >
-          立即采集一次
+          Run Snapshot Now
         </Button>,
         <Button
           key="sync-meta"
@@ -360,11 +434,11 @@ export default function DataMarketWatchPage() {
                 method: 'POST',
                 body: JSON.stringify({ force: false }),
               });
-              message.success(`名称同步完成：${res.status}（ok ${res.successCount} / fail ${res.failCount}）`);
+              message.success(formatRunSummary('Item metadata sync', res));
               poolActionRef.current?.reload();
               taskActionRef.current?.reload();
               if (res.failSample?.length) {
-                setFailPayload({ title: `名称同步失败详情`, data: res.failSample });
+                setFailPayload({ title: 'Item metadata sync failures', data: res.failSample });
                 setFailOpen(true);
               }
             } finally {
@@ -372,7 +446,7 @@ export default function DataMarketWatchPage() {
             }
           }}
         >
-          同步名称/图标
+          Sync Names & Icons
         </Button>,
         <Button
           key="lowfreq"
@@ -381,25 +455,39 @@ export default function DataMarketWatchPage() {
             await loadLowfreq();
           }}
         >
-          低频候选 / 批量移除
+          Low-Frequency Candidates
         </Button>,
         <Button key="add" type="primary" onClick={() => setAddOpen(true)}>
-          添加到采集池
+          Add to Pool
         </Button>,
       ]}
     >
       <Alert
         type="info"
         showIcon
-        message="第一阶段只做数据正确入库"
+        message="What this page manages"
         description={
           <div>
-            <div>1）采集池内的 itemId 会被定时任务每 10 分钟抓取官方 commerce/prices 并写入快照表。</div>
-            <div>2）采集池唯一 itemId 上限 1000；满了需要先移除低频物品。</div>
-            <div>3）“立即采集一次”会尝试获取任务锁；若正在运行会直接报错，不会并发执行。</div>
+            <div>1. Items in this pool are polled from the official `commerce/prices` endpoint every 10 minutes and stored as snapshots.</div>
+            <div>2. The pool allows up to 1000 unique item IDs. Remove low-frequency items before adding more when the pool is full.</div>
+            <div>3. &quot;Run Snapshot Now&quot; still respects the backend task lock. If another run is active, the request fails instead of running concurrently.</div>
           </div>
         }
         style={{ marginBottom: 12 }}
+      />
+
+      <PageRequestErrorAlert
+        message="Unable to load market watch pool"
+        description={poolErrorMessage}
+        onRetry={() => poolActionRef.current?.reload()}
+        marginBottom={12}
+      />
+
+      <PageRequestErrorAlert
+        message="Unable to load market watch task history"
+        description={taskErrorMessage}
+        onRetry={() => taskActionRef.current?.reload()}
+        marginBottom={12}
       />
 
       <ProCard
@@ -407,52 +495,71 @@ export default function DataMarketWatchPage() {
           type: 'card',
         }}
       >
-        <ProCard.TabPane key="pool" tab="采集池">
+        <ProCard.TabPane key="pool" tab="Pool">
           <ProTable<PoolItem>
             actionRef={poolActionRef}
             rowKey="itemId"
             cardBordered
             columns={poolColumns}
+            {...poolTableStateProps}
             request={async (params) => {
-              const { current, pageSize, itemId, pinned } = params as any;
-              const res = await request<PoolListResp>('/admin/v1/data/market-watch/pool', {
-                params: {
-                  page: current || 1,
-                  limit: pageSize || 20,
-                  itemId: itemId || '',
-                  pinned: pinned === undefined ? '' : String(pinned),
-                },
-              });
-              setPoolMeta({ total: res.total, max: res.max });
-              return { data: res.items, total: res.total, success: true };
+              const { current, pageSize, itemId, pinned } = params as PoolQueryParams;
+              setHasPoolFilters(
+                (itemId !== undefined && String(itemId) !== '') ||
+                  (pinned !== undefined && String(pinned) !== '')
+              );
+
+              try {
+                const res = await request<PoolListResp>('/admin/v1/data/market-watch/pool', {
+                  params: {
+                    page: current || 1,
+                    limit: pageSize || 20,
+                    itemId: itemId || '',
+                    pinned: pinned === undefined ? '' : String(pinned),
+                  },
+                });
+                setPoolMeta({ total: res.total, max: res.max });
+                setPoolErrorMessage(null);
+                return { data: res.items, total: res.total, success: true };
+              } catch (error: unknown) {
+                setPoolErrorMessage(getErrorMessage(error, 'Failed to load market watch pool'));
+                throw error;
+              }
             }}
           />
         </ProCard.TabPane>
 
-        <ProCard.TabPane key="tasks" tab="任务记录">
+        <ProCard.TabPane key="tasks" tab="Task Runs">
           <ProTable<TaskRun>
             actionRef={taskActionRef}
             rowKey="_id"
             cardBordered
             columns={taskColumns}
+            locale={{ emptyText: 'No market watch task runs have been recorded yet.' }}
             request={async (params) => {
-              const { taskName } = params as any;
-              const res = await request<{ items: TaskRun[] }>('/admin/v1/data/market-watch/task-runs', {
-                params: {
-                  taskName: taskName || 'snapshot_10m',
-                  limit: 50,
-                },
-              });
-              return { data: res.items, total: res.items.length, success: true };
+              const { taskName } = params as TaskQueryParams;
+              try {
+                const res = await request<{ items: TaskRun[] }>('/admin/v1/data/market-watch/task-runs', {
+                  params: {
+                    taskName: taskName || 'snapshot_10m',
+                    limit: 50,
+                  },
+                });
+                setTaskErrorMessage(null);
+                return { data: res.items, total: res.items.length, success: true };
+              } catch (error: unknown) {
+                setTaskErrorMessage(getErrorMessage(error, 'Failed to load market watch task history'));
+                throw error;
+              }
             }}
             pagination={false}
-            search={{ labelWidth: 80 }}
+            search={{ labelWidth: 'auto', searchText: 'Apply filters', resetText: 'Clear filters' }}
           />
         </ProCard.TabPane>
       </ProCard>
 
-      <ModalForm
-        title="添加到采集池"
+      <ModalForm<AddPoolFormValues>
+        title="Add Item to Pool"
         open={addOpen}
         onOpenChange={setAddOpen}
         modalProps={{ destroyOnClose: true }}
@@ -460,18 +567,18 @@ export default function DataMarketWatchPage() {
         onFinish={async (values) => {
           const raw = String(values.itemId || '').trim();
           if (!raw) {
-            message.error('请输入 ItemID');
+            message.error('Enter an item ID');
             return false;
           }
           if (!/^\d+$/.test(raw)) {
-            message.error('ItemID 必须是数字');
+            message.error('Item ID must be numeric');
             return false;
           }
           await request('/admin/v1/data/market-watch/pool', {
             method: 'POST',
             body: JSON.stringify({ itemId: Number(raw), pinned: !!values.pinned }),
           });
-          message.success('已添加');
+          message.success('Item added to pool');
           poolActionRef.current?.reload();
           return true;
         }}
@@ -479,14 +586,14 @@ export default function DataMarketWatchPage() {
         <ProFormText
           name="itemId"
           label="ItemID"
-          placeholder="例如：19721"
-          rules={[{ required: true, message: '请输入 ItemID' }]}
+          placeholder="Example: 19721"
+          rules={[{ required: true, message: 'Enter an item ID' }]}
         />
-        <ProFormSwitch name="pinned" label="置顶" />
+        <ProFormSwitch name="pinned" label="Pinned" />
       </ModalForm>
 
       <Modal
-        title={failPayload?.title || '详情'}
+        title={failPayload?.title || 'Details'}
         open={failOpen}
         onCancel={() => setFailOpen(false)}
         onOk={() => setFailOpen(false)}
@@ -498,7 +605,7 @@ export default function DataMarketWatchPage() {
       </Modal>
 
       <Modal
-        title="低频候选 / 批量移除"
+        title="Low-Frequency Candidates"
         open={lowfreqOpen}
         onCancel={() => setLowfreqOpen(false)}
         width={980}
@@ -510,7 +617,7 @@ export default function DataMarketWatchPage() {
               await loadLowfreq();
             }}
           >
-            刷新候选
+            Refresh Candidates
           </Button>,
           <Button
             key="remove"
@@ -519,11 +626,12 @@ export default function DataMarketWatchPage() {
             onClick={async () => {
               const ids = [...lowfreqSelected];
               Modal.confirm({
-                title: `确认移除选中的 ${ids.length} 个 itemId？`,
-                content: '移除后将停止定时采集这些物品的快照数据。用户关注关系不会删除。',
-                okText: '移除',
+                title: `Remove ${ids.length} selected item IDs from the pool?`,
+                content:
+                  'Scheduled snapshots for these items will stop. User follow relationships are not deleted.',
+                okText: 'Remove',
                 okButtonProps: { danger: true },
-                cancelText: '取消',
+                cancelText: 'Cancel',
                 onOk: async () => {
                   const res = await request<{ success: true; deletedCount: number }>(
                     '/admin/v1/data/market-watch/pool/batch-remove',
@@ -532,26 +640,38 @@ export default function DataMarketWatchPage() {
                       body: JSON.stringify({ itemIds: ids }),
                     }
                   );
-                  message.success(`已移除 ${res.deletedCount} 条采集池记录`);
+                  message.success(`Removed ${res.deletedCount} pool records`);
                   poolActionRef.current?.reload();
                   await loadLowfreq();
                 },
               });
             }}
           >
-            批量移除所选
+            Remove Selected
           </Button>,
           <Button key="close" type="primary" onClick={() => setLowfreqOpen(false)}>
-            关闭
+            Close
           </Button>,
         ]}
       >
         <Alert
           type="warning"
           showIcon
-          message="候选规则"
-          description={<div>当前候选：未置顶且关注数≤2（按关注数升序排序）。置顶物品不会出现在候选中。</div>}
+          message="Candidate rules"
+          description={
+            <div>
+              Current candidates are non-pinned items with follower count less than or equal to 2, sorted by ascending follower count.
+              Pinned items never appear in this list.
+            </div>
+          }
           style={{ marginBottom: 12 }}
+        />
+
+        <PageRequestErrorAlert
+          message="Unable to load low-frequency candidates"
+          description={lowfreqErrorMessage}
+          onRetry={() => void loadLowfreq()}
+          marginBottom={12}
         />
 
         <ProTable<LowFreqPoolItem>

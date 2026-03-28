@@ -10,13 +10,22 @@ import {
 } from '@ant-design/pro-components';
 import { Button, message, Popconfirm, Space } from 'antd';
 import { useRef, useState } from 'react';
-import { request } from '../../services/request';
+import { getErrorMessage, request } from '../../services/request';
 
 type Item = {
   _id: string;
   scale: number;
   id: number;
   name: string;
+};
+
+type FractalDailiesListResp = {
+  items: Item[];
+};
+
+type FractalDailiesImportResp = {
+  itemsInserted: number;
+  skipped: number;
 };
 
 export default function DataFractalDailiesPage() {
@@ -84,7 +93,7 @@ export default function DataFractalDailiesPage() {
         search={false}
         columns={columns}
         request={async () => {
-          const res = await request('/admin/v1/data/fractal-dailies');
+          const res = await request<FractalDailiesListResp>('/admin/v1/data/fractal-dailies');
           return { data: res.items, success: true };
         }}
       />
@@ -154,14 +163,15 @@ export default function DataFractalDailiesPage() {
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
-            const res = await request('/admin/v1/data/fractal-dailies/import', {
+            const res = await request<FractalDailiesImportResp>('/admin/v1/data/fractal-dailies/import', {
               method: 'POST',
               body: JSON.stringify(json),
             });
             message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
             actionRef.current?.reload();
             return true;
-          } catch (e: any) {
+          } catch (error: unknown) {
+            const e = { message: getErrorMessage(error, 'JSON import failed') };
             message.error(e?.message || 'JSON 解析/导入失败');
             return false;
           }

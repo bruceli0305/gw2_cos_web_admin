@@ -41,7 +41,30 @@ export default function RbacRolesPage() {
   }
 
   useEffect(() => {
-    reload().catch(() => setLoading(false));
+    let active = true;
+
+    async function loadInitialData() {
+      try {
+        const [pRes, rRes] = await Promise.all([
+          request<{ items: PermissionDef[] }>('/admin/v1/rbac/permissions'),
+          request<{ items: RoleItem[] }>('/admin/v1/rbac/roles'),
+        ]);
+
+        if (!active) return;
+        setPermissions(pRes.items);
+        setRoles(rRes.items);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadInitialData().catch(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const columns: ProColumns<RoleItem>[] = [

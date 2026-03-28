@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "validate": "pnpm lint && pnpm build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@ant-design/pro-components": "^2.8.10",
+    "@ant-design/pro-form": "^2.32.0",
     "antd": "^6.2.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
