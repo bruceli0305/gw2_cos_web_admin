@@ -1,4 +1,4 @@
-import {
+﻿import {
   PageContainer,
   ProTable,
   type ProColumns,
@@ -55,9 +55,9 @@ export default function DataResourcesRecommendedPage() {
   const [hasSearch, setHasSearch] = useState(false);
   const tableState = getFilterAwareTableProps({
     hasFilters: hasSearch,
-    searchText: 'Search resources',
-    filteredEmptyText: 'No recommended resources match the current search.',
-    emptyText: 'No recommended resources have been added yet.',
+    searchText: '搜索推荐资源',
+    filteredEmptyText: '当前搜索条件下没有匹配的推荐资源。',
+    emptyText: '当前还没有添加任何推荐资源。',
   });
 
   const columns: ProColumns<Item>[] = [
@@ -72,10 +72,10 @@ export default function DataResourcesRecommendedPage() {
       dataIndex: 'hot',
       width: 80,
       search: false,
-      render: (_, r) => (r.hot ? <Tag color="gold">HOT</Tag> : '-'),
+      render: (_, r) => (r.hot ? <Tag color="gold">热门</Tag> : '-'),
     },
     {
-      title: 'Tags',
+      title: '标签',
       dataIndex: 'tags',
       search: false,
       render: (_, r) => (
@@ -135,7 +135,7 @@ export default function DataResourcesRecommendedPage() {
       ]}
     >
       <PageRequestErrorAlert
-        message="Unable to load recommended resources"
+        message="无法加载推荐资源"
         description={errorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
@@ -161,7 +161,7 @@ export default function DataResourcesRecommendedPage() {
             setErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
-            setErrorMessage(getErrorMessage(error, 'Failed to load recommended resources'));
+            setErrorMessage(getErrorMessage(error, '加载推荐资源失败'));
             throw error;
           }
         }}
@@ -201,7 +201,7 @@ export default function DataResourcesRecommendedPage() {
         <ProFormSwitch name="hot" label="热门(hot)" />
         <ProFormSelect
           name="tags"
-          label="Tags"
+          label="标签"
           mode="tags"
           fieldProps={{ tokenSeparators: [',', '，', ' '] }}
         />
@@ -252,7 +252,7 @@ export default function DataResourcesRecommendedPage() {
         <ProFormSwitch name="hot" label="热门(hot)" />
         <ProFormSelect
           name="tags"
-          label="Tags"
+          label="标签"
           mode="tags"
           fieldProps={{ tokenSeparators: [',', '，', ' '] }}
         />

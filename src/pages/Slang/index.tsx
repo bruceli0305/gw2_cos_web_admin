@@ -1,4 +1,4 @@
-import {
+﻿import {
   PageContainer,
   ProTable,
   type ProColumns,
@@ -54,9 +54,9 @@ export default function SlangPage() {
   const [currentTerm, setCurrentTerm] = useState<SlangTerm | null>(null);
   const termTableState = getFilterAwareTableProps({
     hasFilters: hasTermFilters,
-    searchText: 'Apply filters',
-    filteredEmptyText: 'No slang terms match the current filters.',
-    emptyText: 'No slang terms have been added yet.',
+    searchText: '应用筛选',
+    filteredEmptyText: '当前筛选条件下没有匹配的黑话条目。',
+    emptyText: '当前还没有录入任何黑话条目。',
   });
 
   const fetchGroups = useCallback(async () => {
@@ -82,7 +82,7 @@ export default function SlangPage() {
         setGroupsErrorMessage(null);
       } catch (error: unknown) {
         if (active) {
-          setGroupsErrorMessage(getErrorMessage(error, 'Failed to load slang groups'));
+          setGroupsErrorMessage(getErrorMessage(error, '加载黑话分组失败'));
         }
       }
     }
@@ -251,13 +251,13 @@ export default function SlangPage() {
       subTitle="录入/管理游戏内黑话（中文 → 英文/缩写），供前台/小程序快捷复制使用"
     >
       <PageRequestErrorAlert
-        message="Unable to load slang groups"
+        message="无法加载黑话分组"
         description={groupsErrorMessage}
         onRetry={() => void refreshGroups().catch(() => undefined)}
       />
 
       <PageRequestErrorAlert
-        message="Unable to load slang terms"
+        message="无法加载黑话条目"
         description={termTableErrorMessage}
         onRetry={() => termActionRef.current?.reload()}
       />
@@ -297,7 +297,7 @@ export default function SlangPage() {
                       setTermTableErrorMessage(null);
                       return { data: res.items, total: res.total, success: true };
                     } catch (error: unknown) {
-                      setTermTableErrorMessage(getErrorMessage(error, 'Failed to load slang terms'));
+                      setTermTableErrorMessage(getErrorMessage(error, '加载黑话条目失败'));
                       throw error;
                     }
                   }}
@@ -442,7 +442,7 @@ export default function SlangPage() {
                       const items = await refreshGroups();
                       return { data: items, success: true };
                     } catch (error: unknown) {
-                      setGroupsErrorMessage(getErrorMessage(error, 'Failed to load slang groups'));
+                      setGroupsErrorMessage(getErrorMessage(error, '加载黑话分组失败'));
                       throw error;
                     }
                   }}

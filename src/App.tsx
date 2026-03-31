@@ -53,7 +53,7 @@ function RouteFallback({ fullScreen = false }: { fullScreen?: boolean }) {
           animation: 'gw2-admin-route-spin 0.8s linear infinite',
         }}
       />
-      <span style={{ color: '#666', fontSize: 14 }}>Loading...</span>
+      <span style={{ color: '#666', fontSize: 14 }}>加载中...</span>
       <style>{'@keyframes gw2-admin-route-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }'}</style>
     </div>
   );

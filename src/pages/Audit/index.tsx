@@ -44,17 +44,17 @@ export default function AuditPage() {
   const [hasFilters, setHasFilters] = useState(false);
   const tableState = getFilterAwareTableProps({
     hasFilters,
-    searchText: 'Apply filters',
-    filteredEmptyText: 'No audit logs match the current filters.',
-    emptyText: 'No audit logs yet. New admin write operations will appear here.',
+    searchText: '应用筛选',
+    filteredEmptyText: '没有匹配当前筛选条件的审计日志。',
+    emptyText: '当前还没有审计日志，新的后台写操作会显示在这里。',
   });
 
   const columns: ProColumns<AuditItem>[] = [
-    { title: 'Action', dataIndex: 'action', hideInTable: true },
-    { title: 'Resource Type', dataIndex: 'resourceType', hideInTable: true },
-    { title: 'Admin User ID', dataIndex: 'adminUserId', hideInTable: true },
+    { title: '操作类型', dataIndex: 'action', hideInTable: true },
+    { title: '资源类型', dataIndex: 'resourceType', hideInTable: true },
+    { title: '管理员 ID', dataIndex: 'adminUserId', hideInTable: true },
     {
-      title: 'Created Range',
+      title: '创建时间范围',
       dataIndex: 'createdAtRange',
       valueType: 'dateTimeRange',
       hideInTable: true,
@@ -62,14 +62,14 @@ export default function AuditPage() {
         transform: (value?: AuditRangeValue) => ({ from: value?.[0], to: value?.[1] }),
       },
     },
-    { title: 'Created At', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
-    { title: 'Admin', dataIndex: 'adminUsername', width: 140, search: false },
-    { title: 'Action', dataIndex: 'action', width: 180, search: false },
-    { title: 'Resource', dataIndex: 'resourceType', width: 120, search: false },
-    { title: 'Resource ID', dataIndex: 'resourceId', width: 220, search: false, ellipsis: true },
+    { title: '创建时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 170, search: false },
+    { title: '管理员', dataIndex: 'adminUsername', width: 140, search: false },
+    { title: '操作', dataIndex: 'action', width: 180, search: false },
+    { title: '资源', dataIndex: 'resourceType', width: 120, search: false },
+    { title: '资源 ID', dataIndex: 'resourceId', width: 220, search: false, ellipsis: true },
     { title: 'IP', dataIndex: 'ip', width: 140, search: false },
     {
-      title: 'Detail',
+      title: '详情',
       valueType: 'option',
       width: 120,
       render: (_, record) => (
@@ -80,16 +80,16 @@ export default function AuditPage() {
             setDetailOpen(true);
           }}
         >
-          View
+          查看
         </Button>
       ),
     },
   ];
 
   return (
-    <PageContainer title="Audit Logs" subTitle="Track administrative write operations">
+    <PageContainer title="审计日志" subTitle="追踪后台写操作和敏感变更记录。">
       <PageRequestErrorAlert
-        message="Unable to load audit logs"
+        message="无法加载审计日志"
         description={errorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
@@ -120,14 +120,14 @@ export default function AuditPage() {
             setErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
-            setErrorMessage(getErrorMessage(error, 'Failed to load audit logs'));
+            setErrorMessage(getErrorMessage(error, '加载审计日志失败'));
             throw error;
           }
         }}
       />
 
       <Modal
-        title="Audit Detail"
+        title="审计详情"
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         onOk={() => setDetailOpen(false)}

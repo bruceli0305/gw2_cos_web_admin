@@ -1,4 +1,5 @@
 import { Alert, Button } from 'antd';
+import type { ReactNode } from 'react';
 
 type PageRequestErrorAlertProps = {
   message: string;
@@ -29,6 +30,30 @@ export function PageRequestErrorAlert({
           {retryLabel}
         </Button>
       )}
+    />
+  );
+}
+
+type PageNoticeAlertProps = {
+  type: 'info' | 'warning';
+  message: string;
+  description: ReactNode;
+  marginBottom?: number;
+};
+
+export function PageNoticeAlert({
+  type,
+  message,
+  description,
+  marginBottom = 16,
+}: PageNoticeAlertProps) {
+  return (
+    <Alert
+      showIcon
+      type={type}
+      style={{ marginBottom }}
+      message={message}
+      description={description}
     />
   );
 }

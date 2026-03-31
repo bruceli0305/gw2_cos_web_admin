@@ -1,4 +1,4 @@
-import {
+﻿import {
   PageContainer,
   ProTable,
   type ProColumns,
@@ -73,7 +73,7 @@ export default function RbacRolesPage() {
       title: '类型',
       dataIndex: 'isSuper',
       width: 120,
-      render: (_, r) => (r.isSuper ? <Tag color="gold">Super</Tag> : <Tag>Normal</Tag>),
+      render: (_, r) => (r.isSuper ? <Tag color="gold">超级</Tag> : <Tag>普通</Tag>),
     },
     {
       title: '权限数',
@@ -160,7 +160,7 @@ export default function RbacRolesPage() {
         <ProFormDependency name={['isSuper']}>
           {({ isSuper }) =>
             isSuper ? (
-              <div style={{ color: '#888' }}>Super 角色无需配置权限（自动放行）</div>
+              <div style={{ color: '#888' }}>超级角色无需配置权限（自动放行）</div>
             ) : (
               <ProFormCheckbox.Group name="permissionKeys" label="权限" options={permOptions} />
             )
@@ -200,7 +200,7 @@ export default function RbacRolesPage() {
         <ProFormDependency name={['isSuper']}>
           {({ isSuper }) =>
             isSuper ? (
-              <div style={{ color: '#888' }}>Super 角色无需配置权限（自动放行）</div>
+              <div style={{ color: '#888' }}>超级角色无需配置权限（自动放行）</div>
             ) : (
               <ProFormCheckbox.Group name="permissionKeys" label="权限" options={permOptions} />
             )

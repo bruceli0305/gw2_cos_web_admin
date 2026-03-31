@@ -67,10 +67,10 @@ export default function BasicLayout() {
   }, [me]);
 
   const roleSummary = useMemo(() => {
-    if (!me) return 'Admin workspace';
-    if (me.isSuper) return 'Super Admin';
+    if (!me) return '管理员工作区';
+    if (me.isSuper) return '超级管理员';
     if (me.roleNames.length > 0) return me.roleNames.join(', ');
-    return 'Scoped Admin';
+    return '受限管理员';
   }, [me]);
 
   const permissionCount = me?.permissions.length ?? 0;
@@ -78,44 +78,51 @@ export default function BasicLayout() {
 
   const routeConfig = useMemo(() => {
     const raw: RouteItem[] = [
-      { path: '/dashboard', name: 'Dashboard', icon: <DashboardOutlined />, requiredPerm: 'dashboard.read' },
-      { path: '/users', name: 'Users', icon: <UserOutlined />, requiredPerm: 'users.read' },
-      { path: '/translations', name: 'Translations', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
-      { path: '/slang', name: 'Slang Glossary', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
+      { path: '/dashboard', name: '首页看板', icon: <DashboardOutlined />, requiredPerm: 'dashboard.read' },
       {
-        path: '/content',
-        name: 'Content',
+        path: '/community',
+        name: '社区内容',
         icon: <TeamOutlined />,
         routes: [
-          { path: '/content/raids', name: 'Raid Recruitment', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
+          { path: '/users', name: '玩家账号', icon: <UserOutlined />, requiredPerm: 'users.read' },
+          { path: '/wvw-guilds', name: 'WvW 公会', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
+          { path: '/content/raids', name: '团本招募', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
         ],
       },
-      { path: '/wvw-guilds', name: 'WvW Guilds', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
+      {
+        path: '/localization',
+        name: '翻译与词典',
+        icon: <TranslationOutlined />,
+        routes: [
+          { path: '/translations', name: '翻译缓存', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
+          { path: '/slang', name: '黑话词典', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
+        ],
+      },
       {
         path: '/data',
-        name: 'Data',
+        name: '游戏数据',
         icon: <DatabaseOutlined />,
         routes: [
-          { path: '/data/resources-directory', name: 'Resource Directory', icon: <AppstoreOutlined />, requiredPerm: 'resources.read' },
-          { path: '/data/resources-recommended', name: 'Recommended Resources', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
-          { path: '/data/legendary-blueprints', name: 'Legendary Blueprints', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
-          { path: '/data/fractal-dailies', name: 'Fractal Dailies', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-          { path: '/data/mistlock-instabilities', name: 'Mistlock Instabilities', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-          { path: '/data/mistlock-rotations', name: 'Mistlock Rotations', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
-          { path: '/data/gw2-api', name: 'GW2 API Data', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
-          { path: '/data/market-watch', name: 'Market Watch', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
+          { path: '/data/resources-directory', name: '资源黄页', icon: <AppstoreOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/resources-recommended', name: '推荐资源', icon: <LinkOutlined />, requiredPerm: 'resources.read' },
+          { path: '/data/legendary-blueprints', name: '传奇蓝图', icon: <AppstoreOutlined />, requiredPerm: 'legendary.read' },
+          { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-instabilities', name: '碎层词缀', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/mistlock-rotations', name: '碎层轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/gw2-api', name: 'GW2 API 同步', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
         ],
       },
+      { path: '/data/market-watch', name: '交易所观察', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
       {
-        path: '/rbac',
-        name: 'Permissions',
+        path: '/security',
+        name: '权限与审计',
         icon: <SafetyOutlined />,
         routes: [
-          { path: '/rbac/admin-users', name: 'Admin Users', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
-          { path: '/rbac/roles', name: 'Roles', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
+          { path: '/rbac/admin-users', name: '管理员账号', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
+          { path: '/rbac/roles', name: '角色权限', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
+          { path: '/audit', name: '审计日志', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
         ],
       },
-      { path: '/audit', name: 'Audit Logs', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
     ];
 
     const filterRoutes = (list: RouteItem[]): RouteItem[] =>
@@ -126,6 +133,9 @@ export default function BasicLayout() {
           const allowedByChildren = !!(children && children.length > 0);
 
           if (!allowedSelf && !allowedByChildren) return null;
+          if (item.routes && !item.requiredPerm && children?.length === 1) {
+            return children[0];
+          }
           return { ...item, routes: children };
         })
         .filter(Boolean) as RouteItem[];
@@ -146,18 +156,27 @@ export default function BasicLayout() {
     }
 
     localStorage.removeItem(TOKEN_KEY);
-    message.success('Signed out');
+    message.success('已退出登录');
     navigate('/login');
   };
 
   if (loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'radial-gradient(circle at top left, rgba(126,247,242,0.12), transparent 26%), linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%)',
+        }}
+      >
         <Space direction="vertical" size={12} align="center">
           <Spin size="large" />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#1f1f1f', fontSize: 16, fontWeight: 600 }}>Loading admin workspace</div>
-            <div style={{ color: '#8c8c8c', fontSize: 13 }}>Checking account permissions and shell context...</div>
+            <div style={{ color: '#1f1f1f', fontSize: 16, fontWeight: 600 }}>正在加载管理后台</div>
+            <div style={{ color: '#8c8c8c', fontSize: 13 }}>正在校验账号权限与后台上下文...</div>
           </div>
         </Space>
       </div>
@@ -165,29 +184,27 @@ export default function BasicLayout() {
   }
 
   return (
-    <div style={{ height: '100vh' }}>
+    <div
+      style={{
+        height: '100vh',
+        background:
+          'radial-gradient(circle at top left, rgba(126,247,242,0.08), transparent 24%), radial-gradient(circle at top right, rgba(122,169,255,0.08), transparent 26%), linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%)',
+      }}
+    >
       <ProLayout
         style={{ height: '100%' }}
-        contentStyle={{ overflow: 'auto' }}
-        title="COS Admin"
+        contentStyle={{ overflow: 'auto', background: 'transparent' }}
+        title="协同学院后台"
         logo={(
-          <div
+          <img
+            src="/logo.svg"
+            alt="协同学院"
             style={{
               width: 32,
               height: 32,
-              borderRadius: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#fff',
-              background: 'linear-gradient(135deg, #1677ff 0%, #0f766e 100%)',
-              boxShadow: '0 10px 20px rgba(22, 119, 255, 0.18)',
+              display: 'block',
             }}
-          >
-            GW2
-          </div>
+          />
         )}
         layout="mix"
         splitMenus={false}
@@ -205,10 +222,12 @@ export default function BasicLayout() {
             <div
               style={{
                 margin: 12,
-                padding: '12px 14px',
-                borderRadius: 12,
-                border: '1px solid #f0f0f0',
-                background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                padding: '14px 16px',
+                borderRadius: 18,
+                border: '1px solid rgba(148, 163, 184, 0.16)',
+                background:
+                  'radial-gradient(circle at top left, rgba(126,247,242,0.14), transparent 26%), linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
+                boxShadow: '0 14px 28px rgba(15, 23, 42, 0.04)',
               }}
             >
               <div
@@ -220,18 +239,18 @@ export default function BasicLayout() {
                   textTransform: 'uppercase',
                 }}
               >
-                Current Admin
+                当前管理员
               </div>
               <div style={{ marginTop: 8, color: '#1f1f1f', fontSize: 14, fontWeight: 600 }}>{me.username}</div>
               <div style={{ marginTop: 4, color: '#8c8c8c', fontSize: 12 }}>{roleSummary}</div>
               <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <Tag color={me.isSuper ? 'gold' : 'blue'} style={{ marginInlineEnd: 0 }}>
-                  {me.isSuper ? 'Super Admin' : 'Role Scoped'}
+                  {me.isSuper ? '超级管理员' : '角色受限'}
                 </Tag>
-                <Tag style={{ marginInlineEnd: 0 }}>{permissionCount} perms</Tag>
+                <Tag style={{ marginInlineEnd: 0 }}>{me.isSuper ? '全量权限' : `${permissionCount} 项权限`}</Tag>
                 {me.mustChangePassword ? (
                   <Tag color="warning" style={{ marginInlineEnd: 0 }}>
-                    Password reset required
+                    需要修改密码
                   </Tag>
                 ) : null}
               </div>
@@ -262,13 +281,13 @@ export default function BasicLayout() {
                   {
                     key: 'changePassword',
                     icon: <KeyOutlined />,
-                    label: 'Change password',
+                    label: '修改密码',
                     onClick: () => navigate('/change-password'),
                   },
                   {
                     key: 'logout',
                     icon: <LogoutOutlined />,
-                    label: 'Sign out',
+                    label: '退出登录',
                     onClick: handleLogout,
                   },
                 ],
@@ -296,10 +315,10 @@ export default function BasicLayout() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
                     <span style={{ color: '#1f1f1f', fontSize: 13, fontWeight: 600 }}>
-                      {me?.username || 'Admin'}
+                      {me?.username || '管理员'}
                     </span>
                     <span style={{ color: '#8c8c8c', fontSize: 12 }}>
-                      {me?.isSuper ? 'Super Admin' : roleSummary}
+                      {me?.isSuper ? '超级管理员' : roleSummary}
                     </span>
                   </div>
                 </div>

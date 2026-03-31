@@ -1,4 +1,4 @@
-import {
+﻿import {
   PageContainer,
   ProTable,
   type ProColumns,
@@ -8,9 +8,10 @@ import {
   ProFormTextArea,
   ProFormSelect,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tag } from 'antd';
+import { Button, Card, Col, Popconfirm, Row, Space, Statistic, Tag, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PageRequestErrorAlert } from '../../components/listPageState';
+import { getDestructivePopconfirmProps } from '../../components/confirmProps';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { runSafeFollowUp } from '../../services/followUp';
 import { getErrorMessage, request } from '../../services/request';
@@ -67,15 +68,15 @@ export default function DataResourcesDirectoryPage() {
   const [hasFilters, setHasFilters] = useState(false);
 
   const [importOpen, setImportOpen] = useState(false);
-
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [current, setCurrent] = useState<Item | null>(null);
+
   const tableState = getFilterAwareTableProps({
     hasFilters,
-    searchText: 'Apply filters',
-    filteredEmptyText: 'No directory resources match the current filters.',
-    emptyText: 'No directory resources have been added yet.',
+    searchText: '应用筛选',
+    filteredEmptyText: '没有匹配当前筛选条件的资源条目。',
+    emptyText: '当前还没有录入任何资源黄页条目。',
   });
 
   const fetchOverview = useCallback(async () => {
@@ -100,7 +101,7 @@ export default function DataResourcesDirectoryPage() {
         setOverviewErrorMessage(null);
       } catch (error: unknown) {
         if (active) {
-          setOverviewErrorMessage(getErrorMessage(error, 'Failed to load directory overview'));
+          setOverviewErrorMessage(getErrorMessage(error, '鍔犺浇璧勬簮榛勯〉姒傝澶辫触'));
         }
       }
     }
@@ -113,65 +114,77 @@ export default function DataResourcesDirectoryPage() {
 
   const categoryEnum = useMemo(() => {
     const out: CategoryValueEnum = {};
-    for (const c of overview?.categories || []) out[c.name] = { text: `${c.name} (${c.count})` };
+    for (const category of overview?.categories || []) {
+      out[category.name] = { text: `${category.name} (${category.count})` };
+    }
     return out;
   }, [overview]);
 
+  const categoryOptions = useMemo(
+    () => (overview?.categories || []).map((category) => ({ label: category.name, value: category.name })),
+    [overview]
+  );
+  const largestCategory = useMemo(() => {
+    if (!overview?.categories?.length) return null;
+    return [...overview.categories].sort((a, b) => b.count - a.count)[0];
+  }, [overview]);
+
   const columns: ProColumns<Item>[] = [
-    { title: '关键词', dataIndex: 'q', hideInTable: true },
+    { title: '鍏抽敭璇?, dataIndex: 'q', hideInTable: true },
     {
-      title: '分类筛选',
+      title: '鍒嗙被',
       dataIndex: 'category',
       hideInTable: true,
       valueType: 'select',
       valueEnum: categoryEnum,
     },
-    { title: 'Tag', dataIndex: 'tag', hideInTable: true },
-
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
-    { title: '链接', dataIndex: 'url', ellipsis: true, copyable: true },
-    { title: '分类', dataIndex: 'categoryName', width: 160, search: false },
+    { title: '鏍囩', dataIndex: 'tag', hideInTable: true },
+    { title: '鍚嶇О', dataIndex: 'name', ellipsis: true, copyable: true },
+    { title: 'URL', dataIndex: 'url', ellipsis: true, copyable: true },
+    { title: '鍒嗙被', dataIndex: 'categoryName', width: 160, search: false },
     {
-      title: 'Tags',
+      title: '鏍囩',
       dataIndex: 'tags',
       search: false,
-      render: (_, r) => (
+      render: (_, record) => (
         <Space wrap>
-          {(r.tags || []).slice(0, 6).map((t) => (
-            <Tag key={t}>{t}</Tag>
+          {(record.tags || []).slice(0, 6).map((tag) => (
+            <Tag key={tag}>{tag}</Tag>
           ))}
         </Space>
       ),
     },
-    { title: '描述', dataIndex: 'description', ellipsis: true, search: false },
-    { title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
+    { title: '鎻忚堪', dataIndex: 'description', ellipsis: true, search: false },
+    { title: '鏇存柊鏃堕棿', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: '操作',
+      title: '鎿嶄綔',
       valueType: 'option',
       width: 200,
-      render: (_, r) => (
+      render: (_, record) => (
         <Space>
           <Button
             type="link"
             onClick={() => {
-              setCurrent(r);
+              setCurrent(record);
               setEditOpen(true);
             }}
           >
-            编辑
+            缂栬緫
           </Button>
-
           <Popconfirm
-            title="确定删除该条目？"
+            {...getDestructivePopconfirmProps({
+              title: '纭畾鍒犻櫎璇ヨ祫婧愭潯鐩紵',
+              description: '杩欎細浠庤祫婧愰粍椤典腑绉婚櫎褰撳墠绮鹃€夋潯鐩€?,
+            })}
             onConfirm={async () => {
-              await request(`/admin/v1/data/resources-directory/items/${r._id}`, { method: 'DELETE' });
-              message.success('已删除');
+              await request(`/admin/v1/data/resources-directory/items/${record._id}`, { method: 'DELETE' });
+              message.success('鏉＄洰宸插垹闄?);
               await runSafeFollowUp(reloadOverview);
               actionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              删除
+              鍒犻櫎
             </Button>
           </Popconfirm>
         </Space>
@@ -179,40 +192,75 @@ export default function DataResourcesDirectoryPage() {
     },
   ];
 
-  const categoryOptions = useMemo(
-    () => (overview?.categories || []).map((c) => ({ label: c.name, value: c.name })),
-    [overview]
-  );
-
   return (
     <PageContainer
-      title="资源黄页"
-      subTitle="查看 / 新增编辑删除 / 导入（覆盖）"
+      title="璧勬簮榛勯〉"
+      subTitle="绠＄悊绮鹃€夎祫婧愭潯鐩拰鍏ㄩ噺 JSON 瀵煎叆銆?
       content={
         <div style={{ color: '#666' }}>
-          总条目：{overview?.total_count ?? '-'}；生成时间：{overview?.generated_at_utc ?? '-'}
+          鏉＄洰鎬绘暟锛歿overview?.total_count ?? '-'} | 鐢熸垚鏃堕棿锛圲TC锛夛細{overview?.generated_at_utc ?? '-'}
         </div>
       }
       extra={[
         <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
-          新增
+          鏂板缓鏉＄洰
         </Button>,
         <Button key="import" onClick={() => setImportOpen(true)}>
-          导入（覆盖）
+          瀵煎叆 JSON锛堝叏閲忔浛鎹級
         </Button>,
       ]}
     >
       <PageRequestErrorAlert
-        message="Unable to load directory overview"
+        message="鏃犳硶鍔犺浇璧勬簮榛勯〉姒傝"
         description={overviewErrorMessage}
         onRetry={() => void reloadOverview().catch(() => undefined)}
       />
 
+      <PageNoticeAlert
+        type="info"
+        message="鏈〉缁存姢鍏紑璧勬簮鐩綍"
+        description={(
+          <div>
+            <div>1. 杩欓噷缁存姢鐨勬槸璧勬簮榛勯〉鐩綍鏈韩锛屾敮鎸佸崟鏉＄紪杈戝拰鏁村寘 JSON 鍏ㄩ噺瀵煎叆銆?/div>
+            <div>2. 椤堕儴鎽樿浼氭樉绀烘€婚噺銆佸垎绫昏妯°€佸綋鍓嶆渶澶у垎绫诲拰褰撳墠瑙嗗浘鐘舵€併€?/div>
+            <div>3. 瀵煎叆 JSON 浼氭墽琛屽叏閲忔浛鎹紝閫傚悎鐩綍鍩虹嚎閲嶅缓锛屼笉閫傚悎闆舵暎鐑慨銆?/div>
+          </div>
+        )}
+        marginBottom={12}
+      />
+
       <PageRequestErrorAlert
-        message="Unable to load directory resources"
+        message="鏃犳硶鍔犺浇璧勬簮榛勯〉鏉＄洰"
         description={tableErrorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
+
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="鐩綍鎬婚噺" value={overview?.total_count ?? '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>褰撳墠璧勬簮榛勯〉鐩綍涓殑鍏紑鏉＄洰鎬绘暟銆?/div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="鍒嗙被鏁伴噺" value={overview?.categories?.length ?? '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>褰撳墠鐩綍宸插缓绔嬬殑璧勬簮鍒嗙被鏁伴噺銆?/div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="鏈€澶у垎绫? value={largestCategory ? `${largestCategory.name} 路 ${largestCategory.count}` : '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>甯姪蹇€熻瘑鍒綋鍓嶇洰褰曢噷鏉＄洰鏈€闆嗕腑鐨勮祫婧愬垎绫汇€?/div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="褰撳墠瑙嗗浘" value={hasFilters ? '绛涢€変腑' : '鍏ㄩ儴鐩綍'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>鎼滅储銆佸垎绫诲拰鏍囩绛涢€夐兘浼氱洿鎺ュ奖鍝嶄笅鏂圭洰褰曠粨鏋溿€?/div>
+          </Card>
+        </Col>
+      </Row>
 
       <ProTable<Item>
         actionRef={actionRef}
@@ -237,18 +285,17 @@ export default function DataResourcesDirectoryPage() {
             setTableErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
-            setTableErrorMessage(getErrorMessage(error, 'Failed to load directory resources'));
+            setTableErrorMessage(getErrorMessage(error, '鍔犺浇璧勬簮榛勯〉鏉＄洰澶辫触'));
             throw error;
           }
         }}
       />
 
-      {/* 新增 */}
       <ModalForm
-        title="新增黄页条目"
+        title="鏂板缓璧勬簮鏉＄洰"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 760 }}
         onFinish={async (values) => {
           await request('/admin/v1/data/resources-directory/items', {
             method: 'POST',
@@ -266,42 +313,43 @@ export default function DataResourcesDirectoryPage() {
               notes: values.notes || '',
             }),
           });
-          message.success('创建成功');
+          message.success('鏉＄洰宸插垱寤?);
           await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
       >
-        <ProFormText name="name" label="名称" rules={[{ required: true }]} />
+        <ProFormText name="name" label="鍚嶇О" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
         <ProFormSelect
           name="categoryName"
-          label="分类"
+          label="鍒嗙被"
           options={categoryOptions}
-          placeholder="可直接输入新分类"
+          placeholder="杈撳叆鏂板垎绫伙紝鎴栭€夋嫨宸叉湁鍒嗙被"
+          extra="分类用于目录归档；新建条目时可直接输入新分类，编辑时会影响现有归档。"
           fieldProps={{ showSearch: true, allowClear: true }}
         />
         <ProFormSelect
           name="tags"
-          label="Tags"
+          label="鏍囩"
           mode="tags"
-          fieldProps={{ tokenSeparators: [',', '，', ' '] }}
+          extra="标签用于搜索和前台展示，建议保持短词、可复用，并避免同义词漂移。"
+          fieldProps={{ tokenSeparators: [',', '\uFF0C', ' '] }}
         />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
-        <ProFormTextArea name="descriptionEn" label="英文描述(可选)" fieldProps={{ rows: 2 }} />
-        <ProFormText name="languageHint" label="语言提示(可选)" />
-        <ProFormText name="regionHint" label="地区提示(可选)" />
-        <ProFormText name="source" label="来源(可选)" />
-        <ProFormText name="status" label="状态(可选)" />
-        <ProFormTextArea name="notes" label="备注(可选)" fieldProps={{ rows: 2 }} />
+        <ProFormTextArea name="description" label="鎻忚堪" fieldProps={{ rows: 3 }} />
+        <ProFormTextArea name="descriptionEn" label="鑻辨枃鎻忚堪锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
+        <ProFormText name="languageHint" label="璇█鎻愮ず锛堝彲閫夛級" />
+        <ProFormText name="regionHint" label="鍦板尯鎻愮ず锛堝彲閫夛級" />
+        <ProFormText name="source" label="鏉ユ簮锛堝彲閫夛級" />
+        <ProFormText name="status" label="鐘舵€侊紙鍙€夛級" />
+        <ProFormTextArea name="notes" label="澶囨敞锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
       </ModalForm>
 
-      {/* 编辑 */}
       <ModalForm
-        title={`编辑：${current?.name || ''}`}
+        title={`缂栬緫鏉＄洰锛?{current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 760 }}
         initialValues={{
           name: current?.name,
           url: current?.url,
@@ -333,42 +381,41 @@ export default function DataResourcesDirectoryPage() {
               notes: values.notes || '',
             }),
           });
-          message.success('更新成功');
+          message.success('鏉＄洰宸叉洿鏂?);
           await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
       >
-        <ProFormText name="name" label="名称" rules={[{ required: true }]} />
+        <ProFormText name="name" label="鍚嶇О" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
         <ProFormSelect
           name="categoryName"
-          label="分类"
+          label="鍒嗙被"
           options={categoryOptions}
-          placeholder="可直接输入新分类"
+          placeholder="杈撳叆鏂板垎绫伙紝鎴栭€夋嫨宸叉湁鍒嗙被"
           fieldProps={{ showSearch: true, allowClear: true }}
         />
         <ProFormSelect
           name="tags"
-          label="Tags"
+          label="鏍囩"
           mode="tags"
-          fieldProps={{ tokenSeparators: [',', '，', ' '] }}
+          fieldProps={{ tokenSeparators: [',', '\uFF0C', ' '] }}
         />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
-        <ProFormTextArea name="descriptionEn" label="英文描述(可选)" fieldProps={{ rows: 2 }} />
-        <ProFormText name="languageHint" label="语言提示(可选)" />
-        <ProFormText name="regionHint" label="地区提示(可选)" />
-        <ProFormText name="source" label="来源(可选)" />
-        <ProFormText name="status" label="状态(可选)" />
-        <ProFormTextArea name="notes" label="备注(可选)" fieldProps={{ rows: 2 }} />
+        <ProFormTextArea name="description" label="鎻忚堪" fieldProps={{ rows: 3 }} />
+        <ProFormTextArea name="descriptionEn" label="鑻辨枃鎻忚堪锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
+        <ProFormText name="languageHint" label="璇█鎻愮ず锛堝彲閫夛級" />
+        <ProFormText name="regionHint" label="鍦板尯鎻愮ず锛堝彲閫夛級" />
+        <ProFormText name="source" label="鏉ユ簮锛堝彲閫夛級" />
+        <ProFormText name="status" label="鐘舵€侊紙鍙€夛級" />
+        <ProFormTextArea name="notes" label="澶囨敞锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
       </ModalForm>
 
-      {/* 导入 */}
       <ModalForm
-        title="导入资源黄页（JSON，覆盖全量）"
+        title="瀵煎叆璧勬簮榛勯〉锛圝SON锛屽叏閲忔浛鎹級"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 820 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
@@ -376,23 +423,25 @@ export default function DataResourcesDirectoryPage() {
               method: 'POST',
               body: JSON.stringify(json),
             });
-            message.success(`导入成功：分类 ${res.categoriesInserted}，条目 ${res.itemsInserted}，跳过 ${res.skipped}`);
+            message.success(
+              `瀵煎叆瀹屾垚锛氬垎绫?${res.categoriesInserted} 涓紝鏉＄洰 ${res.itemsInserted} 鏉★紝璺宠繃 ${res.skipped} 鏉
+            );
             await runSafeFollowUp(reloadOverview);
             actionRef.current?.reload();
             return true;
           } catch (error: unknown) {
-            const e = { message: getErrorMessage(error, 'Import failed') };
-            message.error(e?.message || 'JSON 解析/导入失败');
+            message.error(getErrorMessage(error, 'JSON 瑙ｆ瀽鎴栧鍏ュけ璐?));
             return false;
           }
         }}
       >
         <ProFormTextArea
           name="jsonText"
-          label="JSON 内容"
-          placeholder="粘贴 JSON（包含 items 数组）。"
+          label="JSON 鍐呭"
+          placeholder='绮樿创鍖呭惈 "items" 鏁扮粍鐨?JSON銆?
+          extra="杩欐槸鍏ㄩ噺鏇挎崲鍏ュ彛銆傚鍏ュ墠璇风‘璁?JSON 宸茶鐩栦綘甯屾湜淇濈暀鐨勫叏閮ㄧ洰褰曟潯鐩€?
           fieldProps={{ rows: 14 }}
-          rules={[{ required: true, message: '请粘贴 JSON' }]}
+          rules={[{ required: true, message: '璇峰厛绮樿创 JSON 鍐呭' }]}
         />
       </ModalForm>
     </PageContainer>

@@ -7,8 +7,9 @@ import {
   ProFormSelect,
   ProFormSwitch,
 } from '@ant-design/pro-components';
-import { Alert, Button, Modal, Select, Space, Tag, message } from 'antd';
+import { Alert, Button, Card, Col, Modal, Row, Select, Space, Statistic, Tag, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PageNoticeAlert } from '../../components/listPageState';
 import { runSafeFollowUp } from '../../services/followUp';
 import { getErrorMessage, request } from '../../services/request';
 
@@ -61,6 +62,13 @@ type SyncFormValues = {
   prune?: boolean;
   types?: string[];
 };
+
+function formatDateTime(value?: string) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('zh-CN', { hour12: false });
+}
 
 export default function DataGw2ApiPage() {
   const actionRef = useRef<ActionType>(null);
@@ -118,7 +126,7 @@ export default function DataGw2ApiPage() {
         setTypesErrorMessage(null);
       } catch (error: unknown) {
         if (active) {
-          setTypesErrorMessage(getErrorMessage(error, 'Failed to load GW2 API entity types'));
+          setTypesErrorMessage(getErrorMessage(error, '加载 GW2 API 实体类型失败'));
         }
       }
     }
@@ -140,7 +148,7 @@ export default function DataGw2ApiPage() {
         if (active) setSyncStatesErrorMessage(null);
       } catch (error: unknown) {
         if (active) {
-          setSyncStatesErrorMessage(getErrorMessage(error, 'Failed to load sync status'));
+          setSyncStatesErrorMessage(getErrorMessage(error, '加载同步状态失败'));
         }
       }
     }
@@ -160,14 +168,15 @@ export default function DataGw2ApiPage() {
   }, [syncStates]);
 
   const currentState = stateMap.get(type);
+  const currentLangLabel = lang === 'zh' ? '中文' : '英文';
 
   const columns: ProColumns<EntityItem>[] = [
-    { title: 'Keyword', dataIndex: 'q', hideInTable: true },
+    { title: '名称 / GW2 ID', dataIndex: 'q', hideInTable: true },
     { title: 'GW2 ID', dataIndex: 'gw2Id', width: 160, copyable: true },
-    { title: 'Name', dataIndex: 'name', ellipsis: true },
-    { title: 'Updated At', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
+    { title: '名称', dataIndex: 'name', ellipsis: true },
+    { title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: 'Actions',
+      title: '操作',
       valueType: 'option',
       width: 120,
       render: (_, record) => (
@@ -182,7 +191,7 @@ export default function DataGw2ApiPage() {
             setPayloadOpen(true);
           }}
         >
-          View JSON
+          查看载荷
         </Button>
       ),
     },
@@ -190,25 +199,25 @@ export default function DataGw2ApiPage() {
 
   function renderStatusTag(state?: SyncState) {
     if (!state) return null;
-    if (state.status === 'running') return <Tag color="processing">Running</Tag>;
-    if (state.status === 'success') return <Tag color="success">Success</Tag>;
-    if (state.status === 'error') return <Tag color="error">Error</Tag>;
-    return <Tag>Idle</Tag>;
+    if (state.status === 'running') return <Tag color="processing">运行中</Tag>;
+    if (state.status === 'success') return <Tag color="success">成功</Tag>;
+    if (state.status === 'error') return <Tag color="error">失败</Tag>;
+    return <Tag>空闲</Tag>;
   }
 
   return (
     <PageContainer
-      title="GW2 API Data"
-      subTitle="Sync official GW2 data into the admin database for downstream tooling."
+      title="GW2 API 同步"
+      subTitle="把官方 GW2 API 实体同步到后台游戏数据工作区，供其它管理工具继续使用。"
       extra={[
         <Space key="controls">
-          <span>Language:</span>
+          <span>语言：</span>
           <Select<Language>
             value={lang}
             style={{ width: 120 }}
             options={[
-              { label: 'Chinese (zh)', value: 'zh' },
-              { label: 'English (en)', value: 'en' },
+              { label: '中文 (zh)', value: 'zh' },
+              { label: '英文 (en)', value: 'en' },
             ]}
             onChange={(value) => {
               setLang(value);
@@ -216,7 +225,7 @@ export default function DataGw2ApiPage() {
             }}
           />
 
-          <span>Type:</span>
+          <span>类型：</span>
           <Select
             value={type}
             style={{ width: 220 }}
@@ -231,37 +240,80 @@ export default function DataGw2ApiPage() {
             type="primary"
             onClick={async () => {
               try {
-                message.loading({ content: 'Sync in progress...', key: 'sync' });
+                message.loading({ content: '同步进行中...', key: 'sync' });
                 const res = await request<SyncResponse>('/admin/v1/data/gw2-api/sync', {
                   method: 'POST',
                   body: JSON.stringify({ types: [type], lang, prune: true }),
                 });
-                message.success({ content: `Sync completed: ${res.results?.[0]?.type || type}`, key: 'sync' });
+                message.success({ content: `同步完成：${res.results?.[0]?.type || type}`, key: 'sync' });
                 await runSafeFollowUp(() => refreshStates(lang));
                 actionRef.current?.reload();
               } catch (error: unknown) {
-                message.error({ content: getErrorMessage(error, 'Sync failed'), key: 'sync' });
+                message.error({ content: getErrorMessage(error, '同步失败'), key: 'sync' });
                 await runSafeFollowUp(() => refreshStates(lang));
               }
             }}
           >
-            Sync Current Type
+            同步当前类型
           </Button>
 
-          <Button onClick={() => setSyncOpen(true)}>Advanced Sync</Button>
+          <Button onClick={() => setSyncOpen(true)}>高级同步</Button>
         </Space>,
       ]}
     >
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="当前实体类型" value={type || '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>上方搜索和同步动作都会基于当前实体类型执行。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="语言版本" value={currentLangLabel} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前列表与同步状态均按选中的语言维度展示。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="缓存条目" value={typeof currentState?.itemsTotal === 'number' ? currentState.itemsTotal : '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前实体类型在本地缓存中的记录总数。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <div style={{ color: '#8c8c8c', fontSize: 12 }}>同步状态</div>
+            <div style={{ marginTop: 10 }}>{renderStatusTag(currentState) || <Tag>未加载</Tag>}</div>
+            <div style={{ marginTop: 12, color: '#64748b', fontSize: 12 }}>
+              最后更新：{formatDateTime(currentState?.updatedAt)}
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <PageNoticeAlert
+        type="info"
+        message="如何使用这个同步工作区"
+        description={(
+          <div>
+            <div>1. 先用语言和实体类型选择器查看某个上游域名当前的缓存数据。</div>
+            <div>2. “同步当前类型”适合单类型刷新；需要一次同步多种实体时再使用“高级同步”。</div>
+            <div>3. 载荷查看器展示的是后台缓存记录，不是实时上游响应。</div>
+          </div>
+        )}
+        marginBottom={16}
+      />
+
       {typesErrorMessage ? (
         <Alert
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="Unable to load GW2 API entity types"
+          message="无法加载 GW2 API 实体类型"
           description={typesErrorMessage}
           action={(
             <Button size="small" onClick={() => void loadTypes().catch(() => undefined)}>
-              Retry
+              重试
             </Button>
           )}
         />
@@ -272,11 +324,11 @@ export default function DataGw2ApiPage() {
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="Unable to load sync status"
+          message="无法加载同步状态"
           description={syncStatesErrorMessage}
           action={(
             <Button size="small" onClick={() => void refreshStates(lang).catch(() => undefined)}>
-              Retry
+              重试
             </Button>
           )}
         />
@@ -287,11 +339,11 @@ export default function DataGw2ApiPage() {
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="Unable to load GW2 API entities"
+          message="无法加载 GW2 API 实体"
           description={tableErrorMessage}
           action={(
             <Button size="small" onClick={() => actionRef.current?.reload()}>
-              Retry
+              重试
             </Button>
           )}
         />
@@ -300,10 +352,10 @@ export default function DataGw2ApiPage() {
       <div style={{ marginBottom: 12 }}>
         <Space wrap>
           {renderStatusTag(currentState)}
-          {typeof currentState?.buildId === 'number' ? <Tag>build: {currentState.buildId}</Tag> : null}
-          {typeof currentState?.itemsTotal === 'number' ? <Tag>total: {currentState.itemsTotal}</Tag> : null}
-          {typeof currentState?.itemsUpserted === 'number' ? <Tag>changed: {currentState.itemsUpserted}</Tag> : null}
-          {typeof currentState?.itemsDeleted === 'number' ? <Tag>deleted: {currentState.itemsDeleted}</Tag> : null}
+          {typeof currentState?.buildId === 'number' ? <Tag>版本号：{currentState.buildId}</Tag> : null}
+          {typeof currentState?.itemsTotal === 'number' ? <Tag>缓存条目：{currentState.itemsTotal}</Tag> : null}
+          {typeof currentState?.itemsUpserted === 'number' ? <Tag>写入条目：{currentState.itemsUpserted}</Tag> : null}
+          {typeof currentState?.itemsDeleted === 'number' ? <Tag>删除条目：{currentState.itemsDeleted}</Tag> : null}
           {currentState?.status === 'error' && currentState.errorMessage ? (
             <Tag color="error" style={{ maxWidth: 520, overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {currentState.errorMessage}
@@ -319,13 +371,13 @@ export default function DataGw2ApiPage() {
         columns={columns}
         search={{
           labelWidth: 'auto',
-          searchText: 'Search entities',
-          resetText: 'Clear filters',
+          searchText: '搜索缓存实体',
+          resetText: '清空筛选',
         }}
         locale={{
           emptyText: hasSearch
-            ? 'No cached entities match the current search.'
-            : 'No cached GW2 API entities found for the selected type and language.',
+            ? '没有匹配当前搜索条件的缓存实体。'
+            : '当前所选类型和语言还没有可用的缓存实体。',
         }}
         request={async (params) => {
           const query = params as TableRequestParams;
@@ -344,14 +396,14 @@ export default function DataGw2ApiPage() {
             setTableErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
-            setTableErrorMessage(getErrorMessage(error, 'Failed to load GW2 API entities'));
+            setTableErrorMessage(getErrorMessage(error, '加载 GW2 API 实体失败'));
             throw error;
           }
         }}
       />
 
       <Modal
-        title="Raw JSON"
+        title="实体载荷"
         open={payloadOpen}
         onCancel={() => setPayloadOpen(false)}
         onOk={() => setPayloadOpen(false)}
@@ -363,14 +415,14 @@ export default function DataGw2ApiPage() {
       </Modal>
 
       <ModalForm<SyncFormValues>
-        title="Advanced Sync"
+        title="高级同步计划"
         open={syncOpen}
         onOpenChange={setSyncOpen}
         modalProps={{ destroyOnClose: true }}
         initialValues={{ lang, prune: true, types: types.length ? [type] : [] }}
         onFinish={async (values) => {
           try {
-            message.loading({ content: 'Sync in progress...', key: 'sync2' });
+            message.loading({ content: '同步进行中...', key: 'sync2' });
             await request('/admin/v1/data/gw2-api/sync', {
               method: 'POST',
               body: JSON.stringify({
@@ -379,37 +431,37 @@ export default function DataGw2ApiPage() {
                 types: values.types || [],
               }),
             });
-            message.success({ content: 'Sync completed', key: 'sync2' });
+            message.success({ content: '同步完成', key: 'sync2' });
             setLang(values.lang);
             await runSafeFollowUp(() => refreshStates(values.lang));
             actionRef.current?.reload();
             return true;
           } catch (error: unknown) {
-            message.error({ content: getErrorMessage(error, 'Sync failed'), key: 'sync2' });
+            message.error({ content: getErrorMessage(error, '同步失败'), key: 'sync2' });
             return false;
           }
         }}
       >
         <ProFormSelect
           name="lang"
-          label="Language"
+          label="语言"
           options={[
-            { label: 'Chinese (zh)', value: 'zh' },
-            { label: 'English (en)', value: 'en' },
+            { label: '中文 (zh)', value: 'zh' },
+            { label: '英文 (en)', value: 'en' },
           ]}
           rules={[{ required: true }]}
         />
         <ProFormSelect
           name="types"
-          label="Types"
+          label="实体类型"
           mode="multiple"
           options={typeOptions}
-          rules={[{ required: true, message: 'Select at least one type' }]}
+          rules={[{ required: true, message: '至少选择一个类型' }]}
         />
         <ProFormSwitch
           name="prune"
-          label="Prune Missing Items"
-          tooltip="Delete records that are missing from the current upstream sync result."
+          label="删除缺失缓存记录"
+          tooltip="删除当前上游同步结果中已不存在的缓存记录，仅针对所选实体类型生效。"
         />
       </ModalForm>
     </PageContainer>

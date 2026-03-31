@@ -29,37 +29,37 @@ export default function ContentPvpPage() {
   const actionRef = useRef<ActionType>(null);
 
   const columns: ProColumns<PvpItem>[] = [
-    { title: 'Keyword', dataIndex: 'q', hideInTable: true },
-    { title: 'Title', dataIndex: 'title', ellipsis: true },
-    { title: 'Mode', dataIndex: 'mode', width: 110, search: false },
-    { title: 'Region', dataIndex: 'region', width: 110, search: false },
-    { title: 'Creator', dataIndex: 'creator', width: 120, render: (_, record) => <Tag>{record.creator}</Tag> },
-    { title: 'Start Time', dataIndex: 'startTime', valueType: 'dateTime', width: 170, search: false },
+    { title: '关键词', dataIndex: 'q', hideInTable: true },
+    { title: '标题', dataIndex: 'title', ellipsis: true },
+    { title: '模式', dataIndex: 'mode', width: 110, search: false },
+    { title: '地区', dataIndex: 'region', width: 110, search: false },
+    { title: '创建者', dataIndex: 'creator', width: 120, render: (_, record) => <Tag>{record.creator}</Tag> },
+    { title: '开始时间', dataIndex: 'startTime', valueType: 'dateTime', width: 170, search: false },
     {
-      title: 'Created At',
+      title: '创建时间',
       dataIndex: 'createdAtMs',
       valueType: 'dateTime',
       width: 170,
       search: false,
       renderText: (_, record) => new Date(record.createdAtMs).toISOString(),
     },
-    { title: 'Signups', dataIndex: 'signupCount', width: 80, search: false },
+    { title: '报名数', dataIndex: 'signupCount', width: 80, search: false },
     {
-      title: 'Actions',
+      title: '操作',
       valueType: 'option',
       width: 120,
       render: (_, record) => (
         <Space>
           <Popconfirm
-            title="Delete this PvP recruitment entry?"
+            title="确认删除这个 PvP 招募条目吗？"
             onConfirm={async () => {
               await request(`/admin/v1/pvp/${record._id}`, { method: 'DELETE' });
-              message.success('Deleted');
+              message.success('删除成功');
               actionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              Delete
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -68,7 +68,7 @@ export default function ContentPvpPage() {
   ];
 
   return (
-    <PageContainer title="PvP Recruitment" subTitle="List, search, and force-delete entries">
+    <PageContainer title="PvP 招募" subTitle="查看、搜索和强制删除前台 PvP 招募条目。">
       <ProTable<PvpItem>
         actionRef={actionRef}
         rowKey="_id"
