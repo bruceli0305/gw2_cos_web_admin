@@ -1,11 +1,11 @@
 import {
-  PageContainer,
-  ProTable,
-  type ProColumns,
-  type ActionType,
   ModalForm,
+  PageContainer,
   ProFormSelect,
   ProFormSwitch,
+  ProTable,
+  type ActionType,
+  type ProColumns,
 } from '@ant-design/pro-components';
 import { Alert, Button, Card, Col, Modal, Row, Select, Space, Statistic, Tag, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -208,7 +208,7 @@ export default function DataGw2ApiPage() {
   return (
     <PageContainer
       title="GW2 API 同步"
-      subTitle="把官方 GW2 API 实体同步到后台游戏数据工作区，供其它管理工具继续使用。"
+      subTitle="把官方 GW2 API 实体同步到后台数据工作区，供其它管理工具继续使用。"
       extra={[
         <Space key="controls">
           <span>语言：</span>
@@ -265,13 +265,13 @@ export default function DataGw2ApiPage() {
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前实体类型" value={type || '-'} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>上方搜索和同步动作都会基于当前实体类型执行。</div>
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>上方筛选和同步操作都会基于当前实体类型执行。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="语言版本" value={currentLangLabel} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前列表与同步状态均按选中的语言维度展示。</div>
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前列表和同步状态都按选中的语言维度展示。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
@@ -296,9 +296,9 @@ export default function DataGw2ApiPage() {
         message="如何使用这个同步工作区"
         description={(
           <div>
-            <div>1. 先用语言和实体类型选择器查看某个上游域名当前的缓存数据。</div>
+            <div>1. 先用语言和实体类型选择器查看某个上游域当前的缓存数据。</div>
             <div>2. “同步当前类型”适合单类型刷新；需要一次同步多种实体时再使用“高级同步”。</div>
-            <div>3. 载荷查看器展示的是后台缓存记录，不是实时上游响应。</div>
+            <div>3. “查看载荷”展示的是后台缓存记录，不是实时的上游官方响应。</div>
           </div>
         )}
         marginBottom={16}
@@ -461,7 +461,7 @@ export default function DataGw2ApiPage() {
         <ProFormSwitch
           name="prune"
           label="删除缺失缓存记录"
-          tooltip="删除当前上游同步结果中已不存在的缓存记录，仅针对所选实体类型生效。"
+          tooltip="删除当前上游同步结果中已不存在的缓存记录，仅对所选实体类型生效。"
         />
       </ModalForm>
     </PageContainer>

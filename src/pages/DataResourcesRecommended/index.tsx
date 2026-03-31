@@ -9,9 +9,9 @@
   ProFormSelect,
   ProFormTextArea,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tag } from 'antd';
+import { Alert, Button, Card, Col, Popconfirm, Row, Space, Statistic, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
-import { PageRequestErrorAlert } from '../../components/listPageState';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { getErrorMessage, request } from '../../services/request';
 
@@ -53,6 +53,12 @@ export default function DataResourcesRecommendedPage() {
   const [current, setCurrent] = useState<Item | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasSearch, setHasSearch] = useState(false);
+  const [summary, setSummary] = useState({
+    total: 0,
+    hotCount: 0,
+    kindCount: 0,
+    currentView: '全部推荐',
+  });
   const tableState = getFilterAwareTableProps({
     hasFilters: hasSearch,
     searchText: '搜索推荐资源',
@@ -106,6 +112,7 @@ export default function DataResourcesRecommendedPage() {
 
           <Popconfirm
             title="确定删除该条推荐资源？"
+            description="删除后前台推荐位将失去这条资源卡片入口。"
             onConfirm={async () => {
               await request(`/admin/v1/data/resources-recommended/items/${r._id}`, { method: 'DELETE' });
               message.success('已删除');
@@ -124,21 +131,61 @@ export default function DataResourcesRecommendedPage() {
   return (
     <PageContainer
       title="推荐资源"
-      subTitle="查看 / 新增编辑删除 / 导入（覆盖）"
+      subTitle="维护前台推荐资源卡片，支持单条新增 / 编辑 / 删除和 JSON 覆盖导入。"
       extra={[
         <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
-          新增
+          新增资源
         </Button>,
         <Button key="import" onClick={() => setImportOpen(true)}>
           导入（覆盖）
         </Button>,
       ]}
     >
+      <PageNoticeAlert
+        type="info"
+        message="本页维护前台推荐资源卡片"
+        description={(
+          <div>
+            <div>1. 这里维护的是前台推荐资源区块，不是完整资源黄页目录。</div>
+            <div>2. 单条新增 / 编辑适合推荐位小修；JSON 导入适合整包替换当前推荐基线。</div>
+            <div>3. 删除或覆盖导入会直接影响前台推荐资源展示顺序与内容。</div>
+          </div>
+        )}
+        marginBottom={12}
+      />
+
       <PageRequestErrorAlert
         message="无法加载推荐资源"
         description={errorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
+
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="推荐总量" value={summary.total} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的推荐资源总数。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="热门条目" value={summary.hotCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果中被标记为热门的资源数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="资源类型" value={summary.kindCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页推荐资源覆盖的类型数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="当前视图" value={summary.currentView} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索关键字会直接影响当前推荐资源结果。</div>
+          </Card>
+        </Col>
+      </Row>
 
       <ProTable<Item>
         actionRef={actionRef}
@@ -158,6 +205,12 @@ export default function DataResourcesRecommendedPage() {
                 q: q || '',
               },
             });
+            setSummary({
+              total: res.total,
+              hotCount: res.items.filter((item) => item.hot).length,
+              kindCount: new Set(res.items.map((item) => item.kind).filter(Boolean)).size,
+              currentView: q ? '筛选中' : '全部推荐',
+            });
             setErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
@@ -172,7 +225,7 @@ export default function DataResourcesRecommendedPage() {
         title="新增推荐资源"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 760 }}
         onFinish={async (values) => {
           await request('/admin/v1/data/resources-recommended/items', {
             method: 'POST',
@@ -194,15 +247,21 @@ export default function DataResourcesRecommendedPage() {
       >
         <ProFormText name="name" label="名称" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
-        <ProFormText name="kind" label="类型(kind)" />
-        <ProFormText name="badge" label="徽章(badge)" />
-        <ProFormText name="icon" label="图标(icon)" />
-        <ProFormSwitch name="hot" label="热门(hot)" />
+        <ProFormTextArea
+          name="description"
+          label="描述"
+          extra="用于前台卡片简介，建议保持一两句可快速理解的说明。"
+          fieldProps={{ rows: 3 }}
+        />
+        <ProFormText name="kind" label="类型（kind）" fieldProps={{ placeholder: '例如：build / wiki / tool / guide' }} />
+        <ProFormText name="badge" label="徽章（badge）" fieldProps={{ placeholder: '例如：官方 / 社区精选 / 常用' }} />
+        <ProFormText name="icon" label="图标（icon）" fieldProps={{ placeholder: '填写图标标识或静态资源名' }} />
+        <ProFormSwitch name="hot" label="热门（hot）" />
         <ProFormSelect
           name="tags"
           label="标签"
           mode="tags"
+          extra="标签用于前台展示与后台筛选，建议使用短词并保持稳定命名。"
           fieldProps={{ tokenSeparators: [',', '，', ' '] }}
         />
       </ModalForm>
@@ -212,7 +271,7 @@ export default function DataResourcesRecommendedPage() {
         title={`编辑：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 760 }}
         initialValues={{
           name: current?.name,
           url: current?.url,
@@ -245,15 +304,21 @@ export default function DataResourcesRecommendedPage() {
       >
         <ProFormText name="name" label="名称" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
-        <ProFormText name="kind" label="类型(kind)" />
-        <ProFormText name="badge" label="徽章(badge)" />
-        <ProFormText name="icon" label="图标(icon)" />
-        <ProFormSwitch name="hot" label="热门(hot)" />
+        <ProFormTextArea
+          name="description"
+          label="描述"
+          extra="用于前台卡片简介，建议保持一两句可快速理解的说明。"
+          fieldProps={{ rows: 3 }}
+        />
+        <ProFormText name="kind" label="类型（kind）" fieldProps={{ placeholder: '例如：build / wiki / tool / guide' }} />
+        <ProFormText name="badge" label="徽章（badge）" fieldProps={{ placeholder: '例如：官方 / 社区精选 / 常用' }} />
+        <ProFormText name="icon" label="图标（icon）" fieldProps={{ placeholder: '填写图标标识或静态资源名' }} />
+        <ProFormSwitch name="hot" label="热门（hot）" />
         <ProFormSelect
           name="tags"
           label="标签"
           mode="tags"
+          extra="修改标签会直接影响前台展示和后台搜索结果。"
           fieldProps={{ tokenSeparators: [',', '，', ' '] }}
         />
       </ModalForm>
@@ -263,7 +328,7 @@ export default function DataResourcesRecommendedPage() {
         title="导入推荐资源（JSON，覆盖全量）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 780 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
@@ -271,22 +336,30 @@ export default function DataResourcesRecommendedPage() {
               method: 'POST',
               body: JSON.stringify(json),
             });
-            message.success(`导入成功：写入 ${res.itemsInserted}，跳过 ${res.skipped}`);
+            message.success(`导入成功：写入 ${res.itemsInserted} 条，跳过 ${res.skipped} 条`);
             actionRef.current?.reload();
             return true;
           } catch (error: unknown) {
-            const e = { message: getErrorMessage(error, 'JSON import failed') };
-            message.error(e?.message || 'JSON 解析/导入失败');
+            const e = { message: getErrorMessage(error, 'JSON 导入失败') };
+            message.error(e?.message || 'JSON 解析或导入失败');
             return false;
           }
         }}
       >
+        <Alert
+          type="warning"
+          showIcon
+          message="覆盖导入会替换当前推荐资源清单"
+          description="仅在你确认整包推荐资源 JSON 已完整覆盖当前前台推荐位时使用。零散修改建议优先使用单条编辑。"
+          style={{ marginBottom: 12 }}
+        />
         <ProFormTextArea
           name="jsonText"
           label="JSON 内容"
           placeholder='粘贴 JSON（包含 items 数组）。'
+          extra="导入前请确认名称、链接、标签、热门标记和排序语义已经与前台推荐位一致。"
           fieldProps={{ rows: 14 }}
-          rules={[{ required: true, message: '请粘贴 JSON' }]}
+          rules={[{ required: true, message: '请粘贴 JSON 内容' }]}
         />
       </ModalForm>
     </PageContainer>

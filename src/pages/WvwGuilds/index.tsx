@@ -1,9 +1,9 @@
 import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
-import { Button, Popconfirm, Space, Tag, message } from 'antd';
+import { Button, Card, Col, Popconfirm, Row, Space, Statistic, Tag, message } from 'antd';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDestructivePopconfirmProps } from '../../components/confirmProps';
-import { PageRequestErrorAlert } from '../../components/listPageState';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { getErrorMessage, request } from '../../services/request';
 
@@ -37,9 +37,15 @@ export default function WvwGuildsPage() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasFilters, setHasFilters] = useState(false);
+  const [summary, setSummary] = useState({
+    total: 0,
+    recruiting: 0,
+    euCount: 0,
+    currentView: '全部公会',
+  });
   const tableState = getFilterAwareTableProps({
     hasFilters,
-    searchText: '筛选工会目录',
+    searchText: '筛选公会目录',
     filteredEmptyText: '当前筛选条件下没有匹配的战场公会目录条目。',
     emptyText: '当前还没有创建任何战场公会目录条目。',
   });
@@ -74,8 +80,8 @@ export default function WvwGuildsPage() {
       render: (_, record) => (record.isRecruiting ? <Tag color="green">招募中</Tag> : <Tag>暂停招募</Tag>),
     },
     { title: '页面标识', dataIndex: 'slug', copyable: true, width: 200, search: false },
-    { title: '活跃时间（CET/CEST）', dataIndex: 'primeTimeCET', width: 140, search: false },
-    { title: '活跃时间（北京时间）', dataIndex: 'primeTimeBJ', width: 140, search: false },
+    { title: '活跃时间（CET/CEST）', dataIndex: 'primeTimeCET', width: 160, search: false },
+    { title: '活跃时间（北京时间）', dataIndex: 'primeTimeBJ', width: 160, search: false },
     {
       title: '关键词标签',
       dataIndex: 'tags',
@@ -137,11 +143,51 @@ export default function WvwGuildsPage() {
         </Button>,
       ]}
     >
+      <PageNoticeAlert
+        type="info"
+        message="本页维护 WvW 公会招募目录"
+        description={(
+          <div>
+            <div>1. 这里维护的是面向社区公开展示的公会招募条目和落地页入口。</div>
+            <div>2. “编辑”进入完整单页内容维护；“打开落地页”用于核对前台实际展示结果。</div>
+            <div>3. 删除条目会同时移除目录曝光和对应落地页，请先确认不再需要对外招募。</div>
+          </div>
+        )}
+        marginBottom={12}
+      />
+
       <PageRequestErrorAlert
         message="无法加载战场公会目录条目"
         description={errorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
+
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="目录总量" value={summary.total} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的战场公会目录条目总数。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="招募中" value={summary.recruiting} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果中仍在公开招募的公会数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="欧服条目" value={summary.euCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页中地区为 EU 的招募目录条目数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="当前视图" value={summary.currentView} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索、地区与招募状态筛选会直接影响当前目录结果。</div>
+          </Card>
+        </Col>
+      </Row>
 
       <ProTable<Item>
         actionRef={actionRef}
@@ -151,7 +197,8 @@ export default function WvwGuildsPage() {
         {...tableState}
         request={async (params) => {
           const query = params as TableRequestParams;
-          setHasFilters(Boolean(query.q || query.region || query.recruiting !== undefined));
+          const nextHasFilters = Boolean(query.q || query.region || query.recruiting !== undefined);
+          setHasFilters(nextHasFilters);
 
           try {
             const res = await request<GuildListResponse>('/admin/v1/wvw-guilds', {
@@ -160,6 +207,12 @@ export default function WvwGuildsPage() {
                 region: query.region || '',
                 recruiting: query.recruiting === undefined ? '' : query.recruiting,
               },
+            });
+            setSummary({
+              total: res.total,
+              recruiting: res.items.filter((item) => item.isRecruiting).length,
+              euCount: res.items.filter((item) => item.region === 'EU').length,
+              currentView: nextHasFilters ? '筛选中' : '全部公会',
             });
             setErrorMessage(null);
             return { data: res.items, total: res.total, success: true };

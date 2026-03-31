@@ -141,9 +141,9 @@ export default function RbacAdminUsersPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 260,
+      width: 280,
       render: (_, record) => (
-        <Space>
+        <Space wrap>
           <ModalForm<AdminUserEditValues>
             title={`编辑管理员账号：${record.username}`}
             trigger={<Button type="link">编辑</Button>}
@@ -154,7 +154,7 @@ export default function RbacAdminUsersPage() {
                 method: 'PUT',
                 body: JSON.stringify({ isActive: !!values.isActive, roleIds: values.roleIds || [] }),
               });
-              message.success('更新成功');
+              message.success('管理员账号已更新');
               actionRef.current?.reload();
               return true;
             }}
@@ -181,9 +181,13 @@ export default function RbacAdminUsersPage() {
 
           <Popconfirm
             title="确认删除这个管理员账号吗？"
+            description="删除后这个后台账号将无法继续登录管理台，但不会改写角色模板定义。"
+            okText="删除"
+            okButtonProps={{ danger: true }}
+            cancelText="取消"
             onConfirm={async () => {
               await request(`/admin/v1/rbac/admin-users/${record._id}`, { method: 'DELETE' });
-              message.success('删除成功');
+              message.success('管理员账号已删除');
               actionRef.current?.reload();
             }}
           >
@@ -197,7 +201,7 @@ export default function RbacAdminUsersPage() {
   ];
 
   return (
-    <PageContainer title="管理员账号" subTitle="创建后台账号、分配角色、启停访问状态，并处理密码重置。">
+    <PageContainer title="管理员账号" subTitle="创建后台账号、分配角色、控制访问状态，并处理密码重置。">
       <PageRequestErrorAlert
         message="无法加载角色选项"
         description={rolesErrorMessage}
@@ -273,13 +277,23 @@ export default function RbacAdminUsersPage() {
                   roleIds: values.roleIds || [],
                 }),
               });
-              message.success('创建成功');
+              message.success('管理员账号已创建');
               actionRef.current?.reload();
               return true;
             }}
           >
-            <ProFormText name="username" label="账号名" rules={[{ required: true }, { min: 3 }]} />
-            <ProFormText.Password name="password" label="密码" rules={[{ required: true }, { min: 10 }]} />
+            <ProFormText
+              name="username"
+              label="账号名"
+              placeholder="至少 3 个字符"
+              rules={[{ required: true, message: '必填' }, { min: 3, message: '至少 3 个字符' }]}
+            />
+            <ProFormText.Password
+              name="password"
+              label="密码"
+              placeholder="至少 10 个字符"
+              rules={[{ required: true, message: '必填' }, { min: 10, message: '至少 10 个字符' }]}
+            />
             <ProFormSwitch name="isActive" label="启用账号" initialValue />
             <ProFormSelect
               name="roleIds"
@@ -323,7 +337,12 @@ export default function RbacAdminUsersPage() {
           return true;
         }}
       >
-        <ProFormText.Password name="password" label="新密码" rules={[{ required: true }, { min: 10 }]} />
+        <ProFormText.Password
+          name="password"
+          label="新密码"
+          placeholder="至少 10 个字符"
+          rules={[{ required: true, message: '必填' }, { min: 10, message: '至少 10 个字符' }]}
+        />
       </ModalForm>
     </PageContainer>
   );

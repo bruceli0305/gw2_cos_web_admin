@@ -8,8 +8,9 @@
   ProFormCheckbox,
   ProFormDependency,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tag } from 'antd';
+import { Button, Card, Col, Row, Statistic, message, Popconfirm, Space, Tag } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+import { PageNoticeAlert } from '../../components/listPageState';
 import { request } from '../../services/request';
 
 type PermissionDef = { key: string; name: string; module: string };
@@ -28,6 +29,17 @@ export default function RbacRolesPage() {
     () => permissions.map((p) => ({ label: `${p.module} / ${p.name} (${p.key})`, value: p.key })),
     [permissions]
   );
+  const roleSummary = useMemo(() => {
+    const superRoles = roles.filter((role) => role.isSuper).length;
+    const directPermissionRoles = roles.filter((role) => !role.isSuper && (role.permissionKeys?.length || 0) > 0).length;
+    const permissionModules = new Set(permissions.map((permission) => permission.module).filter(Boolean)).size;
+    return {
+      totalRoles: roles.length,
+      superRoles,
+      directPermissionRoles,
+      permissionModules,
+    };
+  }, [permissions, roles]);
 
   async function reload() {
     setLoading(true);
@@ -99,6 +111,7 @@ export default function RbacRolesPage() {
           </Button>
           <Popconfirm
             title="删除该角色？"
+            description="删除后，已绑定此角色的管理员将失去这组权限定义。"
             onConfirm={async () => {
               await request(`/admin/v1/rbac/roles/${r._id}`, { method: 'DELETE' });
               message.success('已删除');
@@ -117,13 +130,53 @@ export default function RbacRolesPage() {
   return (
     <PageContainer
       title="角色管理"
-      subTitle="创建/编辑角色与权限"
+      subTitle="维护角色模板与权限组合，供管理员账号复用。"
       extra={[
         <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
           新建角色
         </Button>,
       ]}
     >
+      <PageNoticeAlert
+        type="info"
+        message="本页维护后台角色模板"
+        description={(
+          <div>
+            <div>1. 普通角色通过 permissionKeys 组合权限；超级角色不需要逐项配置权限。</div>
+            <div>2. 删除角色前请确认没有管理员仍依赖这组权限定义。</div>
+            <div>3. 这里维护的是角色模板，不直接修改管理员账号本身。</div>
+          </div>
+        )}
+        marginBottom={12}
+      />
+
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="角色总量" value={roleSummary.totalRoles} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前后台可分配的角色模板总数。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="超级角色" value={roleSummary.superRoles} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>拥有全量权限、无需逐项勾选的角色数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="已配权限角色" value={roleSummary.directPermissionRoles} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前已显式绑定 permissionKeys 的普通角色数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="权限模块" value={roleSummary.permissionModules} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前权限定义覆盖的模块数量。</div>
+          </Card>
+        </Col>
+      </Row>
+
       <ProTable<RoleItem>
         rowKey="_id"
         loading={loading}
@@ -138,7 +191,7 @@ export default function RbacRolesPage() {
         title="新建角色"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 860 }}
         initialValues={{ isSuper: false, permissionKeys: [] }}
         onFinish={async (values) => {
           const payload = {
@@ -153,8 +206,17 @@ export default function RbacRolesPage() {
           return true;
         }}
       >
-        <ProFormText name="name" label="角色名" rules={[{ required: true }]} />
-        <ProFormText name="description" label="描述" />
+        <ProFormText
+          name="name"
+          label="角色名"
+          rules={[{ required: true }]}
+          fieldProps={{ placeholder: '例如：内容审核 / 战场公会运营 / 翻译缓存维护' }}
+        />
+        <ProFormText
+          name="description"
+          label="描述"
+          fieldProps={{ placeholder: '简要说明这个角色适合哪类后台职责' }}
+        />
         <ProFormSwitch name="isSuper" label="超级管理员" />
 
         <ProFormDependency name={['isSuper']}>
@@ -162,7 +224,12 @@ export default function RbacRolesPage() {
             isSuper ? (
               <div style={{ color: '#888' }}>超级角色无需配置权限（自动放行）</div>
             ) : (
-              <ProFormCheckbox.Group name="permissionKeys" label="权限" options={permOptions} />
+              <ProFormCheckbox.Group
+                name="permissionKeys"
+                label="权限"
+                options={permOptions}
+                extra="建议按后台职责分组授予权限，避免把无关模块堆进同一个角色。"
+              />
             )
           }
         </ProFormDependency>
@@ -172,7 +239,7 @@ export default function RbacRolesPage() {
         title={`编辑角色: ${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnClose: true, width: 860 }}
         initialValues={{
           name: current?.name,
           description: current?.description,
@@ -193,8 +260,17 @@ export default function RbacRolesPage() {
           return true;
         }}
       >
-        <ProFormText name="name" label="角色名" rules={[{ required: true }]} />
-        <ProFormText name="description" label="描述" />
+        <ProFormText
+          name="name"
+          label="角色名"
+          rules={[{ required: true }]}
+          fieldProps={{ placeholder: '例如：内容审核 / 战场公会运营 / 翻译缓存维护' }}
+        />
+        <ProFormText
+          name="description"
+          label="描述"
+          fieldProps={{ placeholder: '简要说明这个角色适合哪类后台职责' }}
+        />
         <ProFormSwitch name="isSuper" label="超级管理员" />
 
         <ProFormDependency name={['isSuper']}>
@@ -202,7 +278,12 @@ export default function RbacRolesPage() {
             isSuper ? (
               <div style={{ color: '#888' }}>超级角色无需配置权限（自动放行）</div>
             ) : (
-              <ProFormCheckbox.Group name="permissionKeys" label="权限" options={permOptions} />
+              <ProFormCheckbox.Group
+                name="permissionKeys"
+                label="权限"
+                options={permOptions}
+                extra="修改后会直接影响所有绑定此角色的管理员账号可见菜单和可用操作。"
+              />
             )
           }
         </ProFormDependency>

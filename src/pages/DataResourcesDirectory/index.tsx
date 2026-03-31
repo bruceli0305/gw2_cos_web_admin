@@ -101,7 +101,7 @@ export default function DataResourcesDirectoryPage() {
         setOverviewErrorMessage(null);
       } catch (error: unknown) {
         if (active) {
-          setOverviewErrorMessage(getErrorMessage(error, '鍔犺浇璧勬簮榛勯〉姒傝澶辫触'));
+          setOverviewErrorMessage(getErrorMessage(error, '加载资源黄页概览失败'));
         }
       }
     }
@@ -130,20 +130,20 @@ export default function DataResourcesDirectoryPage() {
   }, [overview]);
 
   const columns: ProColumns<Item>[] = [
-    { title: '鍏抽敭璇?, dataIndex: 'q', hideInTable: true },
+    { title: '关键词', dataIndex: 'q', hideInTable: true },
     {
-      title: '鍒嗙被',
+      title: '分类',
       dataIndex: 'category',
       hideInTable: true,
       valueType: 'select',
       valueEnum: categoryEnum,
     },
-    { title: '鏍囩', dataIndex: 'tag', hideInTable: true },
-    { title: '鍚嶇О', dataIndex: 'name', ellipsis: true, copyable: true },
+    { title: '标签', dataIndex: 'tag', hideInTable: true },
+    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     { title: 'URL', dataIndex: 'url', ellipsis: true, copyable: true },
-    { title: '鍒嗙被', dataIndex: 'categoryName', width: 160, search: false },
+    { title: '分类', dataIndex: 'categoryName', width: 160, search: false },
     {
-      title: '鏍囩',
+      title: '标签',
       dataIndex: 'tags',
       search: false,
       render: (_, record) => (
@@ -154,10 +154,10 @@ export default function DataResourcesDirectoryPage() {
         </Space>
       ),
     },
-    { title: '鎻忚堪', dataIndex: 'description', ellipsis: true, search: false },
-    { title: '鏇存柊鏃堕棿', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
+    { title: '描述', dataIndex: 'description', ellipsis: true, search: false },
+    { title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', width: 170, search: false },
     {
-      title: '鎿嶄綔',
+      title: '操作',
       valueType: 'option',
       width: 200,
       render: (_, record) => (
@@ -169,22 +169,22 @@ export default function DataResourcesDirectoryPage() {
               setEditOpen(true);
             }}
           >
-            缂栬緫
+            编辑
           </Button>
           <Popconfirm
             {...getDestructivePopconfirmProps({
-              title: '纭畾鍒犻櫎璇ヨ祫婧愭潯鐩紵',
-              description: '杩欎細浠庤祫婧愰粍椤典腑绉婚櫎褰撳墠绮鹃€夋潯鐩€?,
+              title: '确定删除这条资源目录记录吗？',
+              description: '这会从资源黄页中移除当前条目，删除后无法恢复。',
             })}
             onConfirm={async () => {
               await request(`/admin/v1/data/resources-directory/items/${record._id}`, { method: 'DELETE' });
-              message.success('鏉＄洰宸插垹闄?);
+              message.success('条目已删除');
               await runSafeFollowUp(reloadOverview);
               actionRef.current?.reload();
             }}
           >
             <Button type="link" danger>
-              鍒犻櫎
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -194,43 +194,43 @@ export default function DataResourcesDirectoryPage() {
 
   return (
     <PageContainer
-      title="璧勬簮榛勯〉"
-      subTitle="绠＄悊绮鹃€夎祫婧愭潯鐩拰鍏ㄩ噺 JSON 瀵煎叆銆?
+      title="资源黄页"
+      subTitle="管理精选资源条目，并支持使用 JSON 对目录进行全量导入。"
       content={
         <div style={{ color: '#666' }}>
-          鏉＄洰鎬绘暟锛歿overview?.total_count ?? '-'} | 鐢熸垚鏃堕棿锛圲TC锛夛細{overview?.generated_at_utc ?? '-'}
+          条目总量：{overview?.total_count ?? '-'} | 生成时间（UTC）：{overview?.generated_at_utc ?? '-'}
         </div>
       }
       extra={[
         <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
-          鏂板缓鏉＄洰
+          新建条目
         </Button>,
         <Button key="import" onClick={() => setImportOpen(true)}>
-          瀵煎叆 JSON锛堝叏閲忔浛鎹級
+          导入 JSON（全量替换）
         </Button>,
       ]}
     >
       <PageRequestErrorAlert
-        message="鏃犳硶鍔犺浇璧勬簮榛勯〉姒傝"
+        message="无法加载资源黄页概览"
         description={overviewErrorMessage}
         onRetry={() => void reloadOverview().catch(() => undefined)}
       />
 
       <PageNoticeAlert
         type="info"
-        message="鏈〉缁存姢鍏紑璧勬簮鐩綍"
+        message="本页维护公开资源目录"
         description={(
           <div>
-            <div>1. 杩欓噷缁存姢鐨勬槸璧勬簮榛勯〉鐩綍鏈韩锛屾敮鎸佸崟鏉＄紪杈戝拰鏁村寘 JSON 鍏ㄩ噺瀵煎叆銆?/div>
-            <div>2. 椤堕儴鎽樿浼氭樉绀烘€婚噺銆佸垎绫昏妯°€佸綋鍓嶆渶澶у垎绫诲拰褰撳墠瑙嗗浘鐘舵€併€?/div>
-            <div>3. 瀵煎叆 JSON 浼氭墽琛屽叏閲忔浛鎹紝閫傚悎鐩綍鍩虹嚎閲嶅缓锛屼笉閫傚悎闆舵暎鐑慨銆?/div>
+            <div>1. 这里维护的是资源黄页目录本身，支持单条编辑和整包 JSON 全量导入。</div>
+            <div>2. 顶部摘要会展示目录总量、分类规模、当前最大分类和当前视图状态。</div>
+            <div>3. 导入 JSON 会执行全量替换，适合目录基线重建，不适合零散热修。</div>
           </div>
         )}
         marginBottom={12}
       />
 
       <PageRequestErrorAlert
-        message="鏃犳硶鍔犺浇璧勬簮榛勯〉鏉＄洰"
+        message="无法加载资源黄页条目"
         description={tableErrorMessage}
         onRetry={() => actionRef.current?.reload()}
       />
@@ -238,26 +238,26 @@ export default function DataResourcesDirectoryPage() {
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
-            <Statistic title="鐩綍鎬婚噺" value={overview?.total_count ?? '-'} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>褰撳墠璧勬簮榛勯〉鐩綍涓殑鍏紑鏉＄洰鎬绘暟銆?/div>
+            <Statistic title="目录总量" value={overview?.total_count ?? '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前资源黄页目录中的公开条目总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
-            <Statistic title="鍒嗙被鏁伴噺" value={overview?.categories?.length ?? '-'} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>褰撳墠鐩綍宸插缓绔嬬殑璧勬簮鍒嗙被鏁伴噺銆?/div>
+            <Statistic title="分类数量" value={overview?.categories?.length ?? '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前目录已建立的资源分类数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
-            <Statistic title="鏈€澶у垎绫? value={largestCategory ? `${largestCategory.name} 路 ${largestCategory.count}` : '-'} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>甯姪蹇€熻瘑鍒綋鍓嶇洰褰曢噷鏉＄洰鏈€闆嗕腑鐨勮祫婧愬垎绫汇€?/div>
+            <Statistic title="最大分类" value={largestCategory ? `${largestCategory.name} / ${largestCategory.count}` : '-'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>帮助快速识别当前目录里条目最集中的资源分类。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
-            <Statistic title="褰撳墠瑙嗗浘" value={hasFilters ? '绛涢€変腑' : '鍏ㄩ儴鐩綍'} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>鎼滅储銆佸垎绫诲拰鏍囩绛涢€夐兘浼氱洿鎺ュ奖鍝嶄笅鏂圭洰褰曠粨鏋溿€?/div>
+            <Statistic title="当前视图" value={hasFilters ? '筛选中' : '全部目录'} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索、分类和标签筛选都会直接影响下方目录结果。</div>
           </Card>
         </Col>
       </Row>
@@ -285,14 +285,14 @@ export default function DataResourcesDirectoryPage() {
             setTableErrorMessage(null);
             return { data: res.items, total: res.total, success: true };
           } catch (error: unknown) {
-            setTableErrorMessage(getErrorMessage(error, '鍔犺浇璧勬簮榛勯〉鏉＄洰澶辫触'));
+            setTableErrorMessage(getErrorMessage(error, '加载资源黄页条目失败'));
             throw error;
           }
         }}
       />
 
       <ModalForm
-        title="鏂板缓璧勬簮鏉＄洰"
+        title="新建资源条目"
         open={createOpen}
         onOpenChange={setCreateOpen}
         modalProps={{ destroyOnClose: true, width: 760 }}
@@ -313,40 +313,40 @@ export default function DataResourcesDirectoryPage() {
               notes: values.notes || '',
             }),
           });
-          message.success('鏉＄洰宸插垱寤?);
+          message.success('条目已创建');
           await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
       >
-        <ProFormText name="name" label="鍚嶇О" rules={[{ required: true }]} />
+        <ProFormText name="name" label="名称" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
         <ProFormSelect
           name="categoryName"
-          label="鍒嗙被"
+          label="分类"
           options={categoryOptions}
-          placeholder="杈撳叆鏂板垎绫伙紝鎴栭€夋嫨宸叉湁鍒嗙被"
+          placeholder="输入新分类，或选择已有分类"
           extra="分类用于目录归档；新建条目时可直接输入新分类，编辑时会影响现有归档。"
           fieldProps={{ showSearch: true, allowClear: true }}
         />
         <ProFormSelect
           name="tags"
-          label="鏍囩"
+          label="标签"
           mode="tags"
           extra="标签用于搜索和前台展示，建议保持短词、可复用，并避免同义词漂移。"
           fieldProps={{ tokenSeparators: [',', '\uFF0C', ' '] }}
         />
-        <ProFormTextArea name="description" label="鎻忚堪" fieldProps={{ rows: 3 }} />
-        <ProFormTextArea name="descriptionEn" label="鑻辨枃鎻忚堪锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
-        <ProFormText name="languageHint" label="璇█鎻愮ず锛堝彲閫夛級" />
-        <ProFormText name="regionHint" label="鍦板尯鎻愮ず锛堝彲閫夛級" />
-        <ProFormText name="source" label="鏉ユ簮锛堝彲閫夛級" />
-        <ProFormText name="status" label="鐘舵€侊紙鍙€夛級" />
-        <ProFormTextArea name="notes" label="澶囨敞锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
+        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
+        <ProFormTextArea name="descriptionEn" label="英文描述（可选）" fieldProps={{ rows: 2 }} />
+        <ProFormText name="languageHint" label="语言提示（可选）" />
+        <ProFormText name="regionHint" label="地区提示（可选）" />
+        <ProFormText name="source" label="来源（可选）" />
+        <ProFormText name="status" label="状态（可选）" />
+        <ProFormTextArea name="notes" label="备注（可选）" fieldProps={{ rows: 2 }} />
       </ModalForm>
 
       <ModalForm
-        title={`缂栬緫鏉＄洰锛?{current?.name || ''}`}
+        title={`编辑条目：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
         modalProps={{ destroyOnClose: true, width: 760 }}
@@ -381,38 +381,40 @@ export default function DataResourcesDirectoryPage() {
               notes: values.notes || '',
             }),
           });
-          message.success('鏉＄洰宸叉洿鏂?);
+          message.success('条目已更新');
           await runSafeFollowUp(reloadOverview);
           actionRef.current?.reload();
           return true;
         }}
       >
-        <ProFormText name="name" label="鍚嶇О" rules={[{ required: true }]} />
+        <ProFormText name="name" label="名称" rules={[{ required: true }]} />
         <ProFormText name="url" label="URL" rules={[{ required: true }]} />
         <ProFormSelect
           name="categoryName"
-          label="鍒嗙被"
+          label="分类"
           options={categoryOptions}
-          placeholder="杈撳叆鏂板垎绫伙紝鎴栭€夋嫨宸叉湁鍒嗙被"
+          placeholder="输入新分类，或选择已有分类"
+          extra="修改分类会影响条目在资源黄页中的归档位置，请按目录结构统一命名。"
           fieldProps={{ showSearch: true, allowClear: true }}
         />
         <ProFormSelect
           name="tags"
-          label="鏍囩"
+          label="标签"
           mode="tags"
+          extra="标签会影响搜索与前台聚合展示；删除旧标签前请先确认是否有同义标签替代。"
           fieldProps={{ tokenSeparators: [',', '\uFF0C', ' '] }}
         />
-        <ProFormTextArea name="description" label="鎻忚堪" fieldProps={{ rows: 3 }} />
-        <ProFormTextArea name="descriptionEn" label="鑻辨枃鎻忚堪锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
-        <ProFormText name="languageHint" label="璇█鎻愮ず锛堝彲閫夛級" />
-        <ProFormText name="regionHint" label="鍦板尯鎻愮ず锛堝彲閫夛級" />
-        <ProFormText name="source" label="鏉ユ簮锛堝彲閫夛級" />
-        <ProFormText name="status" label="鐘舵€侊紙鍙€夛級" />
-        <ProFormTextArea name="notes" label="澶囨敞锛堝彲閫夛級" fieldProps={{ rows: 2 }} />
+        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 3 }} />
+        <ProFormTextArea name="descriptionEn" label="英文描述（可选）" fieldProps={{ rows: 2 }} />
+        <ProFormText name="languageHint" label="语言提示（可选）" />
+        <ProFormText name="regionHint" label="地区提示（可选）" />
+        <ProFormText name="source" label="来源（可选）" />
+        <ProFormText name="status" label="状态（可选）" />
+        <ProFormTextArea name="notes" label="备注（可选）" fieldProps={{ rows: 2 }} />
       </ModalForm>
 
       <ModalForm
-        title="瀵煎叆璧勬簮榛勯〉锛圝SON锛屽叏閲忔浛鎹級"
+        title="导入资源黄页（JSON，全量替换）"
         open={importOpen}
         onOpenChange={setImportOpen}
         modalProps={{ destroyOnClose: true, width: 820 }}
@@ -424,24 +426,24 @@ export default function DataResourcesDirectoryPage() {
               body: JSON.stringify(json),
             });
             message.success(
-              `瀵煎叆瀹屾垚锛氬垎绫?${res.categoriesInserted} 涓紝鏉＄洰 ${res.itemsInserted} 鏉★紝璺宠繃 ${res.skipped} 鏉
+              `导入完成：分类 ${res.categoriesInserted} 个，条目 ${res.itemsInserted} 条，跳过 ${res.skipped} 条`
             );
             await runSafeFollowUp(reloadOverview);
             actionRef.current?.reload();
             return true;
           } catch (error: unknown) {
-            message.error(getErrorMessage(error, 'JSON 瑙ｆ瀽鎴栧鍏ュけ璐?));
+            message.error(getErrorMessage(error, 'JSON 解析或导入失败'));
             return false;
           }
         }}
       >
         <ProFormTextArea
           name="jsonText"
-          label="JSON 鍐呭"
-          placeholder='绮樿创鍖呭惈 "items" 鏁扮粍鐨?JSON銆?
-          extra="杩欐槸鍏ㄩ噺鏇挎崲鍏ュ彛銆傚鍏ュ墠璇风‘璁?JSON 宸茶鐩栦綘甯屾湜淇濈暀鐨勫叏閮ㄧ洰褰曟潯鐩€?
+          label="JSON 内容"
+          placeholder='粘贴包含 "items" 数组的 JSON。'
+          extra="这是全量替换入口。导入前请确认 JSON 已覆盖你希望保留的全部目录条目。"
           fieldProps={{ rows: 14 }}
-          rules={[{ required: true, message: '璇峰厛绮樿创 JSON 鍐呭' }]}
+          rules={[{ required: true, message: '请先粘贴 JSON 内容' }]}
         />
       </ModalForm>
     </PageContainer>

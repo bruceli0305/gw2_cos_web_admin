@@ -1,7 +1,7 @@
 import { PageContainer, ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
 import { useRef, useState } from 'react';
-import { PageRequestErrorAlert } from '../../components/listPageState';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { getErrorMessage, request } from '../../services/request';
 
@@ -46,7 +46,7 @@ export default function AuditPage() {
     hasFilters,
     searchText: '应用筛选',
     filteredEmptyText: '没有匹配当前筛选条件的审计日志。',
-    emptyText: '当前还没有审计日志，新的后台写操作会显示在这里。',
+    emptyText: '当前还没有审计日志，新的后台操作记录会显示在这里。',
   });
 
   const columns: ProColumns<AuditItem>[] = [
@@ -80,14 +80,27 @@ export default function AuditPage() {
             setDetailOpen(true);
           }}
         >
-          查看
+          查看详情
         </Button>
       ),
     },
   ];
 
   return (
-    <PageContainer title="审计日志" subTitle="追踪后台写操作和敏感变更记录。">
+    <PageContainer title="审计日志" subTitle="追踪后台关键操作和敏感变更记录。">
+      <PageNoticeAlert
+        type="info"
+        message="如何使用审计日志"
+        description={(
+          <div>
+            <div>1. 可以按操作类型、资源类型、管理员 ID 和时间范围筛选后台动作。</div>
+            <div>2. “详情”会展示这次操作关联的结构化载荷，便于排查变更来源。</div>
+            <div>3. 如果需要追查异常写入链路，优先结合创建时间、资源 ID 和管理员账号交叉定位。</div>
+          </div>
+        )}
+        marginBottom={16}
+      />
+
       <PageRequestErrorAlert
         message="无法加载审计日志"
         description={errorMessage}
@@ -127,7 +140,7 @@ export default function AuditPage() {
       />
 
       <Modal
-        title="审计详情"
+        title="审计详情 JSON"
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         onOk={() => setDetailOpen(false)}

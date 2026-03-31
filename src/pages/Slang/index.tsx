@@ -9,9 +9,9 @@
   ProFormDigit,
   ProFormSelect,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Space, Tabs, Tag } from 'antd';
+import { Button, Card, Col, Row, Statistic, message, Popconfirm, Space, Tabs, Tag } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PageRequestErrorAlert } from '../../components/listPageState';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { runSafeFollowUp } from '../../services/followUp';
 import { getErrorMessage, request } from '../../services/request';
@@ -42,6 +42,9 @@ export default function SlangPage() {
   const [groupsErrorMessage, setGroupsErrorMessage] = useState<string | null>(null);
   const [termTableErrorMessage, setTermTableErrorMessage] = useState<string | null>(null);
   const [hasTermFilters, setHasTermFilters] = useState(false);
+  const [termTotal, setTermTotal] = useState(0);
+  const [termPageCount, setTermPageCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('terms');
 
   // ===== Group modals =====
   const [groupCreateOpen, setGroupCreateOpen] = useState(false);
@@ -112,6 +115,15 @@ export default function SlangPage() {
     });
     return e;
   }, [groups]);
+  const slangSummary = useMemo(() => {
+    return {
+      groupCount: groups.length,
+      termTotal,
+      termPageCount,
+      currentView: hasTermFilters ? '筛选中' : '全部词条',
+      workspace: activeTab === 'terms' ? '黑话条目' : '分组管理',
+    };
+  }, [activeTab, groups.length, hasTermFilters, termPageCount, termTotal]);
 
   const groupColumns: ProColumns<SlangGroup>[] = [
     {
@@ -150,6 +162,7 @@ export default function SlangPage() {
 
           <Popconfirm
             title="确定删除该分组？（分组内仍有条目将无法删除）"
+            description="只有在该分组下没有黑话条目时才能删除。"
             onConfirm={async () => {
               await request(`/admin/v1/slang/groups/${record._id}`, { method: 'DELETE' });
               message.success('已删除');
@@ -230,6 +243,7 @@ export default function SlangPage() {
 
           <Popconfirm
             title="确定删除该条黑话？"
+            description="删除后前台和小程序将不再能快捷查询到这条黑话。"
             onConfirm={async () => {
               await request(`/admin/v1/slang/terms/${record._id}`, { method: 'DELETE' });
               message.success('已删除');
@@ -250,6 +264,19 @@ export default function SlangPage() {
       title="黑话词典"
       subTitle="录入/管理游戏内黑话（中文 → 英文/缩写），供前台/小程序快捷复制使用"
     >
+      <PageNoticeAlert
+        type="info"
+        message="本页维护黑话条目和分组结构"
+        description={(
+          <div>
+            <div>1. “黑话条目”维护中文黑话、英文缩写和备注，用于前台与小程序快捷复制。</div>
+            <div>2. “分组管理”只负责条目归类与排序，不直接修改条目内容。</div>
+            <div>3. 删除分组前请先处理分组内条目；删除黑话后前台会立即失去对应映射。</div>
+          </div>
+        )}
+        marginBottom={12}
+      />
+
       <PageRequestErrorAlert
         message="无法加载黑话分组"
         description={groupsErrorMessage}
@@ -262,8 +289,39 @@ export default function SlangPage() {
         onRetry={() => termActionRef.current?.reload()}
       />
 
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="分组总量" value={slangSummary.groupCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前黑话词典已建立的分组数量。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="词条总量" value={slangSummary.termTotal} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的黑话条目总数。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="当前页词条" value={slangSummary.termPageCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于快速判断当前页载入和筛选结果规模。</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
+          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+            <Statistic title="当前工作台" value={slangSummary.workspace} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
+              {slangSummary.currentView}，当前页签决定你在维护词条还是分组。
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
       <Tabs
         defaultActiveKey="terms"
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={[
           {
             key: 'terms',
@@ -295,6 +353,8 @@ export default function SlangPage() {
                         },
                       });
                       setTermTableErrorMessage(null);
+                      setTermTotal(res.total);
+                      setTermPageCount(res.items.length);
                       return { data: res.items, total: res.total, success: true };
                     } catch (error: unknown) {
                       setTermTableErrorMessage(getErrorMessage(error, '加载黑话条目失败'));
@@ -307,7 +367,7 @@ export default function SlangPage() {
                   title="新增黑话"
                   open={termCreateOpen}
                   onOpenChange={setTermCreateOpen}
-                  modalProps={{ destroyOnClose: true }}
+                  modalProps={{ destroyOnClose: true, width: 760 }}
                   initialValues={{ order: undefined, note: '' }}
                   onFinish={async (values) => {
                     await request('/admin/v1/slang/terms', {
@@ -331,6 +391,7 @@ export default function SlangPage() {
                     valueEnum={groupValueEnum}
                     rules={[{ required: true, message: '必选' }]}
                     fieldProps={{ placeholder: '选择分组' }}
+                    extra="分组会影响词典展示归类，建议先建好分类再录入条目。"
                   />
                   <ProFormText
                     name="zh"
@@ -347,6 +408,7 @@ export default function SlangPage() {
                   <ProFormTextArea
                     name="note"
                     label="备注（可选）"
+                    extra="用于补充全称、语境或特殊说明，不建议重复填写缩写本身。"
                     fieldProps={{ rows: 3, placeholder: '例如：Jumping Puzzle' }}
                   />
                   <ProFormDigit
@@ -360,7 +422,7 @@ export default function SlangPage() {
                   title="编辑黑话"
                   open={termEditOpen}
                   onOpenChange={setTermEditOpen}
-                  modalProps={{ destroyOnClose: true }}
+                  modalProps={{ destroyOnClose: true, width: 760 }}
                   initialValues={
                     currentTerm
                       ? {
@@ -394,6 +456,7 @@ export default function SlangPage() {
                     label="分组"
                     valueEnum={groupValueEnum}
                     rules={[{ required: true, message: '必选' }]}
+                    extra="修改分组会直接改变这条黑话在前台词典中的归类。"
                   />
                   <ProFormText
                     name="zh"
@@ -408,6 +471,7 @@ export default function SlangPage() {
                   <ProFormTextArea
                     name="note"
                     label="备注（可选）"
+                    extra="用于补充全称、出处或适用语境。"
                     fieldProps={{ rows: 3 }}
                   />
                   <ProFormDigit
@@ -430,7 +494,7 @@ export default function SlangPage() {
                   columns={groupColumns}
                   cardBordered
                   search={false}
-                  locale={{ emptyText: 'No slang groups have been created yet.' }}
+                  locale={{ emptyText: '当前还没有创建任何黑话分组。' }}
                   pagination={false}
                   toolBarRender={() => [
                     <Button key="create" type="primary" onClick={() => setGroupCreateOpen(true)}>
@@ -452,7 +516,7 @@ export default function SlangPage() {
                   title="新增分组"
                   open={groupCreateOpen}
                   onOpenChange={setGroupCreateOpen}
-                  modalProps={{ destroyOnClose: true }}
+                  modalProps={{ destroyOnClose: true, width: 680 }}
                   onFinish={async (values) => {
                     await request('/admin/v1/slang/groups', {
                       method: 'POST',
@@ -472,6 +536,7 @@ export default function SlangPage() {
                     label="分组名"
                     rules={[{ required: true, message: '必填' }]}
                     fieldProps={{ placeholder: '例如：通用 / PVE / PVP / 职业' }}
+                    extra="建议按玩家实际检索习惯命名，避免出现功能重叠的分组。"
                   />
                   <ProFormDigit
                     name="order"
@@ -484,7 +549,7 @@ export default function SlangPage() {
                   title="编辑分组"
                   open={groupEditOpen}
                   onOpenChange={setGroupEditOpen}
-                  modalProps={{ destroyOnClose: true }}
+                  modalProps={{ destroyOnClose: true, width: 680 }}
                   initialValues={
                     currentGroup
                       ? {
@@ -513,6 +578,7 @@ export default function SlangPage() {
                     name="name"
                     label="分组名"
                     rules={[{ required: true, message: '必填' }]}
+                    extra="修改名称会直接影响前台词典和后台筛选中的分组显示。"
                   />
                   <ProFormDigit
                     name="order"

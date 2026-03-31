@@ -11,7 +11,7 @@ export function getFilterAwareTableProps({
   searchText,
   filteredEmptyText,
   emptyText,
-  resetText = 'Clear filters',
+  resetText = '清空筛选',
 }: FilterAwareTablePropsOptions) {
   return {
     search: {

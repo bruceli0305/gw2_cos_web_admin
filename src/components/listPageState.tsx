@@ -13,7 +13,7 @@ export function PageRequestErrorAlert({
   message,
   description,
   onRetry,
-  retryLabel = 'Retry',
+  retryLabel = '重试',
   marginBottom = 16,
 }: PageRequestErrorAlertProps) {
   if (!description) return null;

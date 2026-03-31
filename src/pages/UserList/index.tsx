@@ -1,16 +1,33 @@
 import {
+  ModalForm,
   PageContainer,
+  ProFormText,
   ProTable,
   type ActionType,
   type ProColumns,
-  ModalForm,
-  ProFormText,
 } from '@ant-design/pro-components';
 import { DeleteOutlined, EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Col, Descriptions, Empty, Modal, Popconfirm, Row, Space, Spin, Statistic, Switch, Tag, Typography, message } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Empty,
+  Modal,
+  Popconfirm,
+  Row,
+  Space,
+  Spin,
+  Statistic,
+  Switch,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
 import { useRef, useState } from 'react';
-import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getDestructivePopconfirmProps } from '../../components/confirmProps';
+import { PageNoticeAlert, PageRequestErrorAlert } from '../../components/listPageState';
 import { getFilterAwareTableProps } from '../../components/tableState';
 import { getErrorMessage, request } from '../../services/request';
 
@@ -104,7 +121,7 @@ export default function UserListPage() {
       setApiKeyItems(response.items);
     } catch (error: unknown) {
       setApiKeyItems([]);
-      setApiKeyErrorMessage(getErrorMessage(error, '加载绑定的 API Key 失败'));
+      setApiKeyErrorMessage(getErrorMessage(error, '加载绑定的 GW2 API Key 失败'));
     } finally {
       setApiKeyLoading(false);
     }
@@ -149,12 +166,12 @@ export default function UserListPage() {
       title: '操作',
       key: 'action',
       valueType: 'option',
-      width: 360,
+      width: 420,
       render: (_, record) => (
-        <Space>
+        <Space wrap>
           <Switch
-            checkedChildren="Ban"
-            unCheckedChildren="OK"
+            checkedChildren="封禁"
+            unCheckedChildren="正常"
             size="small"
             checked={record.isBanned}
             onChange={async (checked) => {
@@ -171,22 +188,23 @@ export default function UserListPage() {
             }}
           />
 
-          <a onClick={() => void loadUserApiKeys(record)}>
+          <Button type="link" onClick={() => void loadUserApiKeys(record)}>
             <EyeOutlined /> 查看 API Key
-          </a>
+          </Button>
 
-          <a
+          <Button
+            type="link"
             onClick={() => {
               setCurrentUser(record);
               setPasswordModalVisible(true);
             }}
           >
             <KeyOutlined /> 重置密码
-          </a>
+          </Button>
 
           <Popconfirm
             {...getDestructivePopconfirmProps({
-              title: '确定删除该玩家账号？',
+              title: '确定删除这个玩家账号吗？',
               description: '该账号会从前台用户系统中移除，删除后不可恢复。',
             })}
             onConfirm={async () => {
@@ -199,9 +217,9 @@ export default function UserListPage() {
               }
             }}
           >
-            <a style={{ color: '#ff4d4f' }}>
+            <Button type="link" danger>
               <DeleteOutlined /> 删除
-            </a>
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -209,7 +227,7 @@ export default function UserListPage() {
   ];
 
   return (
-    <PageContainer title="玩家账号" subTitle="管理前台玩家账号、访问状态和密码重置。">
+    <PageContainer title="玩家账号" subTitle="管理前台玩家账号、访问状态、API Key 和密码重置。">
       <PageRequestErrorAlert
         message="无法加载玩家账号"
         description={errorMessage}
@@ -221,7 +239,7 @@ export default function UserListPage() {
         message="本页可直接完成的管理动作"
         description={(
           <div>
-            <div>1. 新建前台玩家账号，并查看当前账号是否被封禁。</div>
+            <div>1. 新建前台玩家账号，并查看账号当前是否处于封禁状态。</div>
             <div>2. 直接查看用户绑定的 GW2 API Key、重置密码或删除账号。</div>
             <div>3. 搜索用户名时，顶部摘要会切换为当前筛选结果视图。</div>
           </div>
@@ -254,7 +272,7 @@ export default function UserListPage() {
           <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={hasSearch ? '筛选中' : '全部账号'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
-              当前页展示 {tableSummary.rows} 条记录，支持继续查看 API Key 与账号操作。
+              当前页展示 {tableSummary.rows} 条记录，可继续查看 API Key 与账号操作。
             </div>
           </Card>
         </Col>
