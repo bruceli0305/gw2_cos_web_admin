@@ -25,6 +25,8 @@ const DataLegendaryBlueprintsPage = lazy(() => import('./pages/DataLegendaryBlue
 const DataFractalDailiesPage = lazy(() => import('./pages/DataFractalDailies'));
 const DataMistlockInstabilitiesPage = lazy(() => import('./pages/DataMistlockInstabilities'));
 const DataMistlockRotationsPage = lazy(() => import('./pages/DataMistlockRotations'));
+const DataBossDirectoryPage = lazy(() => import('./pages/DataBossDirectory'));
+const DataBossRotationsPage = lazy(() => import('./pages/DataBossRotations'));
 const DataMarketWatchPage = lazy(() => import('./pages/DataMarketWatch'));
 const DataGw2ApiPage = lazy(() => import('./pages/DataGw2Api'));
 
@@ -100,6 +102,8 @@ function App() {
           <Route path="data/fractal-dailies" element={withRouteSuspense(<DataFractalDailiesPage />)} />
           <Route path="data/mistlock-instabilities" element={withRouteSuspense(<DataMistlockInstabilitiesPage />)} />
           <Route path="data/mistlock-rotations" element={withRouteSuspense(<DataMistlockRotationsPage />)} />
+          <Route path="data/boss-directory" element={withRouteSuspense(<DataBossDirectoryPage />)} />
+          <Route path="data/boss-rotations" element={withRouteSuspense(<DataBossRotationsPage />)} />
           <Route path="data/gw2-api" element={withRouteSuspense(<DataGw2ApiPage />)} />
           <Route path="data/market-watch" element={withRouteSuspense(<DataMarketWatchPage />)} />
 

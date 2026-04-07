@@ -60,15 +60,18 @@ export default function BasicLayout() {
     }
   }, [location.pathname, me, navigate]);
 
-  const hasPerm = useCallback((perm?: string) => {
-    if (!perm) return true;
-    if (!me) return false;
-    if (me.isSuper) return true;
-    return me.permissions.includes(perm);
-  }, [me]);
+  const hasPerm = useCallback(
+    (perm?: string) => {
+      if (!perm) return true;
+      if (!me) return false;
+      if (me.isSuper) return true;
+      return me.permissions.includes(perm);
+    },
+    [me]
+  );
 
   const roleSummary = useMemo(() => {
-    if (!me) return '管理员工作区';
+    if (!me) return '管理工作区';
     if (me.isSuper) return '超级管理员';
     if (me.roleNames.length > 0) return me.roleNames.join(', ');
     return '受限管理员';
@@ -121,6 +124,8 @@ export default function BasicLayout() {
           { path: '/data/fractal-dailies', name: '碎层日常', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
           { path: '/data/mistlock-instabilities', name: '碎层词缀', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
           { path: '/data/mistlock-rotations', name: '碎层轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
+          { path: '/data/boss-directory', name: '副本 Boss 目录', icon: <AppstoreOutlined />, requiredPerm: 'bosses.read' },
+          { path: '/data/boss-rotations', name: '副本 Boss 轮换', icon: <AppstoreOutlined />, requiredPerm: 'bosses.read' },
           { path: '/data/gw2-api', name: 'GW2 API 同步', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
         ],
       },
@@ -207,7 +212,7 @@ export default function BasicLayout() {
         style={{ height: '100%' }}
         contentStyle={{ overflow: 'auto', background: 'transparent' }}
         title="协同学院后台"
-        logo={(
+        logo={
           <img
             src="/logo.svg"
             alt="协同学院"
@@ -217,7 +222,7 @@ export default function BasicLayout() {
               display: 'block',
             }}
           />
-        )}
+        }
         layout="mix"
         splitMenus={false}
         fixSiderbar
@@ -326,12 +331,8 @@ export default function BasicLayout() {
                     {avatarSeed}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-                    <span style={{ color: '#1f1f1f', fontSize: 13, fontWeight: 600 }}>
-                      {me?.username || '管理员'}
-                    </span>
-                    <span style={{ color: '#8c8c8c', fontSize: 12 }}>
-                      {me?.isSuper ? '超级管理员' : roleSummary}
-                    </span>
+                    <span style={{ color: '#1f1f1f', fontSize: 13, fontWeight: 600 }}>{me?.username || '管理员'}</span>
+                    <span style={{ color: '#8c8c8c', fontSize: 12 }}>{me?.isSuper ? '超级管理员' : roleSummary}</span>
                   </div>
                 </div>
               </div>
