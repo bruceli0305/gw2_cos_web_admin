@@ -10,6 +10,7 @@ import {
   LinkOutlined,
   LogoutOutlined,
   SafetyOutlined,
+  StarOutlined,
   TeamOutlined,
   TranslationOutlined,
   TrophyOutlined,
@@ -96,6 +97,17 @@ export default function BasicLayout() {
         routes: [
           { path: '/translations', name: '翻译缓存', icon: <TranslationOutlined />, requiredPerm: 'translations.read' },
           { path: '/slang', name: '黑话词典', icon: <TranslationOutlined />, requiredPerm: 'slang.read' },
+        ],
+      },
+      {
+        path: '/fortune',
+        name: '娱乐占签',
+        icon: <StarOutlined />,
+        routes: [
+          { path: '/fortune/records', name: '结果记录', icon: <FileSearchOutlined />, requiredPerm: 'fortune.read' },
+          { path: '/fortune/prompts', name: '提示词版本', icon: <TranslationOutlined />, requiredPerm: 'fortune.read' },
+          { path: '/fortune/content', name: '内容池', icon: <AppstoreOutlined />, requiredPerm: 'fortune.read' },
+          { path: '/fortune/poster', name: '海报配置', icon: <LinkOutlined />, requiredPerm: 'fortune.read' },
         ],
       },
       {

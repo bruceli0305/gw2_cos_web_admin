@@ -15,6 +15,10 @@ const RbacAdminUsersPage = lazy(() => import('./pages/RbacAdminUsers'));
 const AuditPage = lazy(() => import('./pages/Audit'));
 const WvwGuildsPage = lazy(() => import('./pages/WvwGuilds'));
 const WvwGuildEditPage = lazy(() => import('./pages/WvwGuildEdit'));
+const FortuneRecordsPage = lazy(() => import('./pages/FortuneRecords'));
+const FortunePromptsPage = lazy(() => import('./pages/FortunePrompts'));
+const FortuneContentPage = lazy(() => import('./pages/FortuneContent'));
+const FortunePosterPage = lazy(() => import('./pages/FortunePoster'));
 const DataResourcesDirectoryPage = lazy(() => import('./pages/DataResourcesDirectory'));
 const DataResourcesRecommendedPage = lazy(() => import('./pages/DataResourcesRecommended'));
 const DataLegendaryBlueprintsPage = lazy(() => import('./pages/DataLegendaryBlueprints'));
@@ -104,6 +108,12 @@ function App() {
           <Route path="rbac/admin-users" element={withRouteSuspense(<RbacAdminUsersPage />)} />
 
           <Route path="audit" element={withRouteSuspense(<AuditPage />)} />
+
+          <Route path="fortune" element={<Navigate to="/fortune/records" replace />} />
+          <Route path="fortune/records" element={withRouteSuspense(<FortuneRecordsPage />)} />
+          <Route path="fortune/prompts" element={withRouteSuspense(<FortunePromptsPage />)} />
+          <Route path="fortune/content" element={withRouteSuspense(<FortuneContentPage />)} />
+          <Route path="fortune/poster" element={withRouteSuspense(<FortunePosterPage />)} />
 
           <Route path="wvw-guilds" element={withRouteSuspense(<WvwGuildsPage />)} />
           <Route path="wvw-guilds/:id" element={withRouteSuspense(<WvwGuildEditPage />)} />
