@@ -10,6 +10,10 @@ const UserListPage = lazy(() => import('./pages/UserList'));
 const TranslationsPage = lazy(() => import('./pages/Translations'));
 const SlangPage = lazy(() => import('./pages/Slang'));
 const ContentRaidsPage = lazy(() => import('./pages/ContentRaids'));
+const GuideArticlesPage = lazy(() => import('./pages/GuideArticles'));
+const GuideArticleEditPage = lazy(() => import('./pages/GuideArticleEdit'));
+const GuideCategoriesPage = lazy(() => import('./pages/GuideCategories'));
+const GuideTopicsPage = lazy(() => import('./pages/GuideTopics'));
 const RbacRolesPage = lazy(() => import('./pages/RbacRoles'));
 const RbacAdminUsersPage = lazy(() => import('./pages/RbacAdminUsers'));
 const AuditPage = lazy(() => import('./pages/Audit'));
@@ -94,6 +98,11 @@ function App() {
 
           <Route path="content" element={<Navigate to="/content/raids" replace />} />
           <Route path="content/raids" element={withRouteSuspense(<ContentRaidsPage />)} />
+          <Route path="content/guides" element={withRouteSuspense(<GuideArticlesPage />)} />
+          <Route path="content/guides/new" element={withRouteSuspense(<GuideArticleEditPage />)} />
+          <Route path="content/guides/:id" element={withRouteSuspense(<GuideArticleEditPage />)} />
+          <Route path="content/guides/categories" element={withRouteSuspense(<GuideCategoriesPage />)} />
+          <Route path="content/guides/topics" element={withRouteSuspense(<GuideTopicsPage />)} />
 
           <Route path="data" element={<Navigate to="/data/resources-directory" replace />} />
           <Route path="data/resources-directory" element={withRouteSuspense(<DataResourcesDirectoryPage />)} />

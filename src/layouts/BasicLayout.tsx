@@ -9,6 +9,7 @@ import {
   LineChartOutlined,
   LinkOutlined,
   LogoutOutlined,
+  ReadOutlined,
   SafetyOutlined,
   StarOutlined,
   TeamOutlined,
@@ -88,6 +89,9 @@ export default function BasicLayout() {
         name: '社区内容',
         icon: <TeamOutlined />,
         routes: [
+          { path: '/content/guides', name: '攻略文章', icon: <ReadOutlined />, requiredPerm: 'guides.read' },
+          { path: '/content/guides/categories', name: '攻略分类', icon: <AppstoreOutlined />, requiredPerm: 'guides.read' },
+          { path: '/content/guides/topics', name: '攻略专题', icon: <LinkOutlined />, requiredPerm: 'guides.read' },
           { path: '/users', name: '玩家账号', icon: <UserOutlined />, requiredPerm: 'users.read' },
           { path: '/wvw-guilds', name: 'WvW 公会', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
           { path: '/content/raids', name: '团本招募', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
@@ -189,7 +193,7 @@ export default function BasicLayout() {
             'radial-gradient(circle at top left, rgba(126,247,242,0.12), transparent 26%), linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%)',
         }}
       >
-        <Space direction="vertical" size={12} align="center">
+        <Space orientation="vertical" size={12} align="center">
           <Spin size="large" />
           <div style={{ textAlign: 'center' }}>
             <div style={{ color: '#1f1f1f', fontSize: 16, fontWeight: 600 }}>正在加载管理后台</div>

@@ -23,7 +23,7 @@ export function PageRequestErrorAlert({
       showIcon
       type="error"
       style={{ marginBottom }}
-      message={message}
+      title={message}
       description={description}
       action={(
         <Button size="small" onClick={onRetry}>
@@ -52,7 +52,7 @@ export function PageNoticeAlert({
       showIcon
       type={type}
       style={{ marginBottom }}
-      message={message}
+      title={message}
       description={description}
     />
   );
