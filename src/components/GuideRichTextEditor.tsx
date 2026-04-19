@@ -23,6 +23,7 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useMemo, useState } from 'react';
+import { importMarkdownToGuideDoc } from './guideMarkdown';
 import { uploadGuideCover } from '../services/guides';
 import { getErrorMessage } from '../services/request';
 
@@ -62,6 +63,10 @@ type GuideImageFormValues = {
 type ImageModalState = {
   mode: 'create' | 'edit';
   initialValues?: GuideImageFormValues;
+};
+
+type MarkdownImportState = {
+  value: string;
 };
 
 const DEFAULT_DOC: JSONContent = {
@@ -345,6 +350,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const [imageModal, setImageModal] = useState<ImageModalState | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageForm] = Form.useForm<GuideImageFormValues>();
+  const [markdownImport, setMarkdownImport] = useState<MarkdownImportState | null>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -429,6 +435,14 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     setImageModal(null);
   };
 
+  const openMarkdownImport = () => {
+    setMarkdownImport({ value: '' });
+  };
+
+  const closeMarkdownImport = () => {
+    setMarkdownImport(null);
+  };
+
   const submitGw2NodeModal = async () => {
     if (!editor || !gw2NodeModal) return;
 
@@ -500,7 +514,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     try {
       setImageUploading(true);
       const uploaded = await uploadGuideCover(options.file as File);
-      imageForm.setFieldsValue({ src: uploaded.url });
+      imageForm.setFieldsValue({ src: uploaded.path || uploaded.url });
       message.success('Image uploaded');
       options.onSuccess?.(uploaded);
     } catch (error: unknown) {
@@ -531,31 +545,96 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     editor.chain().focus().deleteSelection().run();
   };
 
+  const submitMarkdownImport = () => {
+    const raw = String(markdownImport?.value || '');
+    if (!raw.trim()) {
+      message.error('请先粘贴 Markdown 内容');
+      return;
+    }
+
+    try {
+      const document = importMarkdownToGuideDoc(raw);
+      const serialized = serializeDocument(document);
+      if (editor) {
+        editor.commands.setContent(document, { emitUpdate: false });
+      }
+      onChange?.(serialized);
+      message.success('Markdown 已导入到编辑器');
+      closeMarkdownImport();
+    } catch (error: unknown) {
+      message.error(getErrorMessage(error, 'Markdown 导入失败'));
+    }
+  };
+
+  const markdownImportButton = (
+    <Button size="small" onClick={openMarkdownImport}>
+      导入 Markdown
+    </Button>
+  );
+
+  const markdownImportModal = (
+    <Modal
+      title="导入 Markdown"
+      open={!!markdownImport}
+      onCancel={closeMarkdownImport}
+      onOk={submitMarkdownImport}
+      destroyOnHidden
+    >
+      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+        <Typography.Text type="secondary">
+          支持基础 Markdown 导入：标题、段落、无序列表、有序列表、引用、代码块、分割线、链接和独立图片。
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          导入后会覆盖当前编辑器内容，并统一转换为现有 `contentJson` 结构。
+        </Typography.Text>
+        <Input.TextArea
+          rows={16}
+          value={markdownImport?.value || ''}
+          onChange={(event) =>
+            setMarkdownImport((current) => ({
+              ...(current || {}),
+              value: event.target.value,
+            }))
+          }
+          placeholder="# 标题&#10;&#10;正文段落&#10;&#10;- 列表项 A&#10;- 列表项 B"
+        />
+      </Space>
+    </Modal>
+  );
+
   if (parsed.error) {
     return (
-      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert
-          type="error"
-          showIcon
-          title="Raw JSON required"
-          description={`${parsed.error}. Fix the JSON first, then the visual editor will become available.`}
-        />
-        {rawJsonEditor}
-      </Space>
+      <>
+        <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+          {markdownImportButton}
+          <Alert
+            type="error"
+            showIcon
+            title="Raw JSON required"
+            description={`${parsed.error}. Fix the JSON first, then the visual editor will become available.`}
+          />
+          {rawJsonEditor}
+        </Space>
+        {markdownImportModal}
+      </>
     );
   }
 
   if (parsed.unsupported.length > 0) {
     return (
-      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        <Alert
-          type="warning"
-          showIcon
-          title="Unsupported custom nodes detected"
-          description={`This article contains nodes or marks the visual editor does not understand yet: ${parsed.unsupported.join(', ')}. Raw JSON editing stays enabled so existing content is not lost.`}
-        />
-        {rawJsonEditor}
-      </Space>
+      <>
+        <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+          {markdownImportButton}
+          <Alert
+            type="warning"
+            showIcon
+            title="Unsupported custom nodes detected"
+            description={`This article contains nodes or marks the visual editor does not understand yet: ${parsed.unsupported.join(', ')}. Raw JSON editing stays enabled so existing content is not lost.`}
+          />
+          {rawJsonEditor}
+        </Space>
+        {markdownImportModal}
+      </>
     );
   }
 
@@ -563,6 +642,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
       <div className="guide-richtext-editor">
         <Space wrap className="guide-richtext-toolbar">
+          {markdownImportButton}
           <Tooltip title="Paragraph">
             <Button size="small" onClick={() => editor?.chain().focus().setParagraph().run()}>
               P
@@ -750,6 +830,8 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
           </Form>
         </Space>
       </Modal>
+
+      {markdownImportModal}
     </Space>
   );
 }

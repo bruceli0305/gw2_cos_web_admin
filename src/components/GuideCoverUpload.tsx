@@ -33,7 +33,7 @@ export default function GuideCoverUpload({ value, onChange }: GuideCoverUploadPr
     try {
       setUploading(true);
       const uploaded = await uploadGuideCover(options.file as File);
-      onChange?.(uploaded.url);
+      onChange?.(uploaded.path || uploaded.url);
       message.success('Cover image uploaded');
       options.onSuccess?.(uploaded);
     } catch (error: unknown) {
