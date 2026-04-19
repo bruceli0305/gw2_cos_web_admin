@@ -146,7 +146,7 @@ export default function GuideCategoriesPage() {
         title={editing ? `编辑分类：${editing.name}` : '新增分类'}
         open={modalOpen}
         onOpenChange={setModalOpen}
-        modalProps={{ destroyOnClose: true, width: 720 }}
+        modalProps={{ destroyOnHidden: true, width: 720 }}
         initialValues={{
           name: editing?.name,
           slug: editing?.slug,

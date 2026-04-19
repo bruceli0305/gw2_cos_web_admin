@@ -153,7 +153,7 @@ export default function ChangePasswordPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 26 }}>
-                {['必经步骤', '刷新令牌', '受保护后台'].map((label) => (
+                {['必须步骤', '刷新令牌', '保护后台'].map((label) => (
                   <span
                     key={label}
                     style={{
@@ -193,7 +193,7 @@ export default function ChangePasswordPage() {
                   lineHeight: 1.75,
                 }}
               >
-                当前后台仍在强制执行改密流程。新密码提交成功后，系统会刷新登录令牌，并把你重新带回后台工作区。
+                当前后台仍在执行强制改密流程。新密码提交成功后，系统会刷新登录令牌，并把你重新带回后台工作区。
               </div>
 
               <div
@@ -359,13 +359,13 @@ export default function ChangePasswordPage() {
 
               <div style={{ color: '#0f172a', fontSize: 28, fontWeight: 700, lineHeight: 1.1 }}>更新你的后台密码</div>
               <div style={{ marginTop: 10, color: '#64748b', fontSize: 14, lineHeight: 1.75 }}>
-                先输入当前密码，再设置新的管理员密码。完成后即可解锁其余后台页面。
+                先输入当前密码，再设置新的管理员密码。完成后即可解除其余后台页面限制。
               </div>
 
               <Alert
                 type="warning"
                 showIcon
-                message="必须先完成密码更新"
+                title="必须先完成密码更新"
                 description="如果你的账号被其他管理员重置，或被标记为强制更新密码，在完成这一步之前不能访问其他后台页面。"
                 style={{ marginTop: 20, marginBottom: 14, borderRadius: 16 }}
               />
@@ -373,7 +373,7 @@ export default function ChangePasswordPage() {
               <Alert
                 type="info"
                 showIcon
-                message="完成后会发生什么"
+                title="完成后会发生什么"
                 description="更新成功后，页面会自动刷新，并带着新令牌返回后台首页。"
                 style={{ marginBottom: 14, borderRadius: 16 }}
               />
@@ -382,7 +382,7 @@ export default function ChangePasswordPage() {
                 <Alert
                   type="error"
                   showIcon
-                  message="无法更新密码"
+                  title="无法更新密码"
                   description={errorMessage}
                   style={{ marginBottom: 14, borderRadius: 16 }}
                 />
@@ -444,7 +444,7 @@ export default function ChangePasswordPage() {
                 </Form.Item>
 
                 <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                  <Space orientation="vertical" size={12} style={{ width: '100%' }}>
                     <Button
                       type="primary"
                       htmlType="submit"

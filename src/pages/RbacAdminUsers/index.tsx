@@ -147,7 +147,7 @@ export default function RbacAdminUsersPage() {
           <ModalForm<AdminUserEditValues>
             title={`编辑管理员账号：${record.username}`}
             trigger={<Button type="link">编辑</Button>}
-            modalProps={{ destroyOnClose: true }}
+            modalProps={{ destroyOnHidden: true }}
             initialValues={{ isActive: record.isActive, roleIds: record.roleIds }}
             onFinish={async (values) => {
               await request(`/admin/v1/rbac/admin-users/${record._id}`, {
@@ -229,25 +229,25 @@ export default function RbacAdminUsersPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="管理员总量" value={adminSummary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前后台可管理的管理员账号总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页启用数" value={adminSummary.active} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前结果页里处于启用状态的管理员账号数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="超级角色关联" value={adminSummary.superRoleUsers} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前结果页里挂载超级角色的管理员账号数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="角色模板数" value={roles.length} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               当前页展示 {adminSummary.rows} 条账号记录，可直接继续编辑角色或重置密码。
@@ -266,7 +266,7 @@ export default function RbacAdminUsersPage() {
             key="create"
             title="新建管理员账号"
             trigger={<Button type="primary">新建管理员账号</Button>}
-            modalProps={{ destroyOnClose: true }}
+            modalProps={{ destroyOnHidden: true }}
             onFinish={async (values) => {
               await request('/admin/v1/rbac/admin-users', {
                 method: 'POST',
@@ -326,7 +326,7 @@ export default function RbacAdminUsersPage() {
         title={`重置密码：${pwdUser?.username || ''}`}
         open={pwdOpen}
         onOpenChange={setPwdOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         onFinish={async (values) => {
           if (!pwdUser) return false;
           await request(`/admin/v1/rbac/admin-users/${pwdUser._id}/password`, {

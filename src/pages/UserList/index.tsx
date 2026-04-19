@@ -142,11 +142,7 @@ export default function UserListPage() {
         false: { text: '正常', status: 'Success' },
         true: { text: '封禁', status: 'Error' },
       },
-      render: (_, record) => (
-        <Tag color={record.isBanned ? 'error' : 'success'}>
-          {record.isBanned ? '封禁' : '正常'}
-        </Tag>
-      ),
+      render: (_, record) => <Tag color={record.isBanned ? 'error' : 'success'}>{record.isBanned ? '封禁' : '正常'}</Tag>,
     },
     {
       title: '最近登录',
@@ -249,7 +245,7 @@ export default function UserListPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title={hasSearch ? '筛选结果数' : '账号总量'} value={tableSummary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               {hasSearch ? '当前搜索条件下的总匹配账号数。' : '当前前台玩家账号总量。'}
@@ -257,19 +253,19 @@ export default function UserListPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页封禁数" value={tableSummary.banned} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>便于快速判断当前结果页是否存在异常账号。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页管理标记" value={tableSummary.admins} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于识别带后台标记的特殊账号记录。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={hasSearch ? '筛选中' : '全部账号'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               当前页展示 {tableSummary.rows} 条记录，可继续查看 API Key 与账号操作。
@@ -326,7 +322,7 @@ export default function UserListPage() {
         open={apiKeyModalOpen}
         width={760}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         onCancel={() => {
           setApiKeyModalOpen(false);
           setApiKeyUser(null);
@@ -339,12 +335,12 @@ export default function UserListPage() {
             <Spin />
           </div>
         ) : (
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={16} style={{ width: '100%' }}>
             {apiKeyErrorMessage ? (
               <Alert
                 type="error"
                 showIcon
-                message="无法加载已绑定的 API Key"
+                title="无法加载已绑定的 API Key"
                 description={apiKeyErrorMessage}
                 action={
                   apiKeyUser ? (
@@ -356,9 +352,7 @@ export default function UserListPage() {
               />
             ) : null}
 
-            {!apiKeyErrorMessage && apiKeyItems.length === 0 ? (
-              <Empty description="该玩家账号当前还没有绑定任何 API Key。" />
-            ) : null}
+            {!apiKeyErrorMessage && apiKeyItems.length === 0 ? <Empty description="该玩家账号当前还没有绑定任何 API Key。" /> : null}
 
             {!apiKeyErrorMessage &&
               apiKeyItems.map((item) => (
@@ -369,9 +363,7 @@ export default function UserListPage() {
                   extra={
                     <Space size={8}>
                       {item.source === 'legacyUserField' ? <Tag color="warning">旧版字段</Tag> : null}
-                      <Tag color={item.isActive ? 'processing' : 'default'}>
-                        {item.isActive ? '当前启用' : '已保存'}
-                      </Tag>
+                      <Tag color={item.isActive ? 'processing' : 'default'}>{item.isActive ? '当前启用' : '已保存'}</Tag>
                     </Space>
                   }
                 >
@@ -407,7 +399,7 @@ export default function UserListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         width={420}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         onFinish={async (values) => {
           try {
             await request('/admin/v1/users', {
@@ -445,7 +437,7 @@ export default function UserListPage() {
         open={passwordModalVisible}
         onOpenChange={setPasswordModalVisible}
         width={400}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         onFinish={async (values) => {
           if (!currentUser) return false;
           try {

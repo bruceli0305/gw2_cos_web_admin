@@ -65,7 +65,7 @@ export default function FortunePosterPage() {
       title: '海报标题',
       dataIndex: 'brandTitle',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.brandTitle}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.brandSubtitle || '-'}</span>
         </Space>
@@ -190,7 +190,7 @@ export default function FortunePosterPage() {
           setFormOpen(open);
           if (!open) setEditing(null);
         }}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{
           version: editing?.version,
           brandTitle: editing?.brandTitle,

@@ -71,7 +71,7 @@ export default function FortunePromptsPage() {
       dataIndex: 'version',
       width: 160,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.version}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.key}</span>
         </Space>
@@ -214,7 +214,7 @@ export default function FortunePromptsPage() {
           setFormOpen(open);
           if (!open) setEditing(null);
         }}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{
           version: editing?.version,
           status: editing?.status || 'draft',

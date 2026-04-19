@@ -263,25 +263,25 @@ export default function DataGw2ApiPage() {
     >
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前实体类型" value={type || '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>上方筛选和同步操作都会基于当前实体类型执行。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="语言版本" value={currentLangLabel} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前列表和同步状态都按选中的语言维度展示。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="缓存条目" value={typeof currentState?.itemsTotal === 'number' ? currentState.itemsTotal : '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前实体类型在本地缓存中的记录总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <div style={{ color: '#8c8c8c', fontSize: 12 }}>同步状态</div>
             <div style={{ marginTop: 10 }}>{renderStatusTag(currentState) || <Tag>未加载</Tag>}</div>
             <div style={{ marginTop: 12, color: '#64748b', fontSize: 12 }}>
@@ -309,7 +309,7 @@ export default function DataGw2ApiPage() {
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="无法加载 GW2 API 实体类型"
+          title="无法加载 GW2 API 实体类型"
           description={typesErrorMessage}
           action={(
             <Button size="small" onClick={() => void loadTypes().catch(() => undefined)}>
@@ -324,7 +324,7 @@ export default function DataGw2ApiPage() {
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="无法加载同步状态"
+          title="无法加载同步状态"
           description={syncStatesErrorMessage}
           action={(
             <Button size="small" onClick={() => void refreshStates(lang).catch(() => undefined)}>
@@ -339,7 +339,7 @@ export default function DataGw2ApiPage() {
           showIcon
           type="error"
           style={{ marginBottom: 16 }}
-          message="无法加载 GW2 API 实体"
+          title="无法加载 GW2 API 实体"
           description={tableErrorMessage}
           action={(
             <Button size="small" onClick={() => actionRef.current?.reload()}>
@@ -418,7 +418,7 @@ export default function DataGw2ApiPage() {
         title="高级同步计划"
         open={syncOpen}
         onOpenChange={setSyncOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{ lang, prune: true, types: types.length ? [type] : [] }}
         onFinish={async (values) => {
           try {

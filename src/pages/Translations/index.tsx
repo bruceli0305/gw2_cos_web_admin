@@ -173,7 +173,7 @@ export default function TranslationsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title={hasSearch ? '筛选结果数' : '缓存总量'} value={tableSummary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               {hasSearch ? '当前搜索条件下的总匹配缓存条目数。' : '当前翻译缓存库中的总条目数。'}
@@ -181,19 +181,19 @@ export default function TranslationsPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页调用量" value={tableSummary.usage} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>按当前结果页累计的 usageCount 汇总，用于判断热度。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页中转英" value={tableSummary.cnToEn} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前结果页里 `CN_TO_EN` 方向的缓存条目数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页英转中" value={tableSummary.enToCn} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前结果页里 `EN_TO_CN` 方向的缓存条目数。</div>
           </Card>
@@ -216,7 +216,7 @@ export default function TranslationsPage() {
                 page: query.current || 1,
                 limit: query.pageSize || 20,
                 q: query.q || '',
-                sort: 'hot',
+                sort: 'created',
               },
             });
             setTableSummary({
@@ -239,7 +239,7 @@ export default function TranslationsPage() {
         title="编辑缓存条目"
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         onFinish={async (values) => {
           if (!current) return false;
           await request(`/admin/v1/translations/${current._id}`, {
@@ -264,7 +264,7 @@ export default function TranslationsPage() {
         title="新建缓存条目"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{ direction: 'EN_TO_CN', overwrite: true }}
         onFinish={async (values) => {
           await request('/admin/v1/translations', {

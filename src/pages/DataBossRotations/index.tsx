@@ -253,32 +253,32 @@ export default function DataBossRotationsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="轮换条目" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前轮换表中已录入的 rotationIndex 条目数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="周期长度" value={summary.cycleLength} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于约束 rotationIndex 上限的循环周期长度。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="覆盖 Boss 数" value={summary.uniqueBosses} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前轮换表中涉及到的唯一 bossCodes 数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="基准日期" value={summary.baseDate} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>后续计算 rotationIndex 时使用的起始日期。</div>
           </Card>
         </Col>
       </Row>
 
-      <Card size="small" bordered={false} style={{ marginBottom: 16, borderRadius: 20 }}>
+      <Card size="small" variant="borderless" style={{ marginBottom: 16, borderRadius: 20 }}>
         <Space size={12} wrap>
           <Tag color="blue">key: {config?.key || 'boss-weekly'}</Tag>
           <Tag color="gold">weekStart: {config?.weekStart || 'monday'}</Tag>
@@ -307,7 +307,7 @@ export default function DataBossRotationsPage() {
         title="编辑轮换配置"
         open={configOpen}
         onOpenChange={setConfigOpen}
-        modalProps={{ destroyOnClose: true, width: 640 }}
+        modalProps={{ destroyOnHidden: true, width: 640 }}
         initialValues={{
           baseDate: config?.baseDate,
           weekStart: config?.weekStart || 'monday',
@@ -349,7 +349,7 @@ export default function DataBossRotationsPage() {
         title="新增轮换条目"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 720 }}
+        modalProps={{ destroyOnHidden: true, width: 720 }}
         onFinish={async (values) => {
           if (!values.bossCodes?.length) {
             message.error('请至少选择一个 Boss');
@@ -393,7 +393,7 @@ export default function DataBossRotationsPage() {
         title={`编辑轮换条目：${current?.rotationIndex ?? ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 720 }}
+        modalProps={{ destroyOnHidden: true, width: 720 }}
         initialValues={{
           rotationIndex: current?.rotationIndex,
           bossCodes: current?.bossCodes,
@@ -440,7 +440,7 @@ export default function DataBossRotationsPage() {
         title="导入 Boss 轮换（JSON，全量替换）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');

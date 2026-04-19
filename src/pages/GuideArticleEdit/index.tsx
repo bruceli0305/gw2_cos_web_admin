@@ -66,7 +66,7 @@ type GuideEditorTabKey = 'base' | 'content' | 'seo';
 function parseJsonObject(input: string) {
   const parsed = JSON.parse(input);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('contentJson must be a JSON object');
+    throw new Error('contentJson 必须是 JSON 对象');
   }
   return parsed as Record<string, unknown>;
 }
@@ -263,7 +263,7 @@ export default function GuideArticleEditPage() {
             label="版本标签"
             fieldProps={{ placeholder: '例如：2026 春季版' }}
           />
-          <Form.Item name="coverImage" label="Cover Image">
+          <Form.Item name="coverImage" label="封面图">
             <GuideCoverUpload />
           </Form.Item>
           <ProFormText name="coverAlt" label="封面替代文本" />
@@ -277,9 +277,9 @@ export default function GuideArticleEditPage() {
         <>
           <Form.Item
             name="contentJsonText"
-            label="Content"
+            label="正文内容"
             rules={[{ required: true, message: '请填写正文内容' }]}
-            extra="The visual editor stores ProseMirror JSON in contentJson. Raw JSON remains available for unsupported custom nodes."
+            extra="可视化编辑器会写入后端现有的 contentJson 结构；若遇到暂不支持的自定义节点，仍可回退到原始 JSON 编辑。"
           >
             <GuideRichTextEditor />
           </Form.Item>
@@ -347,12 +347,12 @@ export default function GuideArticleEditPage() {
     >
       <PageNoticeAlert
         type="info"
-        message="Rich text editor enabled"
+        message="已启用富文本编辑器"
         description={(
           <div>
-            <div>1. The editor writes the same `contentJson` document shape the backend already validates and publishes.</div>
-            <div>2. If an article contains unsupported custom nodes, the page falls back to raw JSON editing so existing data is not lost.</div>
-            <div>3. Publish validation is unchanged: empty `doc.content` can still only stay in draft.</div>
+            <div>1. 编辑器写入的仍是后端当前校验并发布的 `contentJson` 文档结构。</div>
+            <div>2. 如果文章包含暂不支持的自定义节点，页面会回退到原始 JSON 编辑，避免已有内容丢失。</div>
+            <div>3. 发布校验逻辑不变：空的 `doc.content` 仍然只能作为草稿保存。</div>
           </div>
         )}
         marginBottom={12}
@@ -361,17 +361,17 @@ export default function GuideArticleEditPage() {
       {!hasEnabledCategories || !hasEnabledTopics ? (
         <PageNoticeAlert
           type="warning"
-          message="Guide taxonomy data is incomplete"
+          message="攻略分类数据未准备完整"
           description={(
             <div>
-              {!hasEnabledCategories ? <div>1. No enabled guide category is available. Articles cannot be saved without a category.</div> : null}
-              {!hasEnabledTopics ? <div>{!hasEnabledCategories ? '2.' : '1.'} No enabled guide topic is available. Topic selection can stay empty, but taxonomy entry should be completed first.</div> : null}
+              {!hasEnabledCategories ? <div>1. 当前没有启用中的攻略分类。文章没有分类时无法保存。</div> : null}
+              {!hasEnabledTopics ? <div>{!hasEnabledCategories ? '2.' : '1.'} 当前没有启用中的攻略专题。专题可暂时留空，但建议先补齐专题数据。</div> : null}
               <div style={{ marginTop: 8 }}>
                 <Button size="small" style={{ marginRight: 8 }} onClick={() => navigate('/content/guides/categories')}>
-                  Open Categories
+                  打开分类管理
                 </Button>
                 <Button size="small" onClick={() => navigate('/content/guides/topics')}>
-                  Open Topics
+                  打开专题管理
                 </Button>
               </div>
             </div>
@@ -384,7 +384,7 @@ export default function GuideArticleEditPage() {
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="编辑模式" value={pageSummary.mode} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前是新建文章还是编辑已有文章。</div>
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于区分当前是新建文章还是编辑已有文章。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
@@ -395,8 +395,8 @@ export default function GuideArticleEditPage() {
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
           <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
-            <Statistic title="目录项数" value={pageSummary.tocCount} />
-            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>由后端从 `contentJson` 自动提取的 TOC 数量。</div>
+            <Statistic title="目录节点数" value={pageSummary.tocCount} />
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>由后端从 `contentJson` 自动提取目录数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
@@ -464,6 +464,7 @@ export default function GuideArticleEditPage() {
               message.error('当前文章缺少 ID，无法执行更新。');
               return false;
             }
+
             const updated = await updateGuideArticle(id, payload);
             setArticle(updated);
             message.success('保存成功');
@@ -474,12 +475,20 @@ export default function GuideArticleEditPage() {
           }
         }}
       >
-        <Tabs
-          type="card"
-          activeKey={activeTab}
-          onChange={(key) => setActiveTab(String(key) as GuideEditorTabKey)}
-          items={tabItems}
-        />
+        <Card variant="borderless" style={{ borderRadius: 24 }} styles={{ body: { padding: 20 } }}>
+          <Tabs
+            type="card"
+            activeKey={activeTab}
+            onChange={(key) => setActiveTab(String(key) as GuideEditorTabKey)}
+            tabBarStyle={{
+              marginBottom: 24,
+              padding: 8,
+              background: '#f8fafc',
+              borderRadius: 16,
+            }}
+            items={tabItems}
+          />
+        </Card>
       </ProForm>
     </PageContainer>
   );

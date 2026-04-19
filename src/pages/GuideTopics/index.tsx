@@ -146,7 +146,7 @@ export default function GuideTopicsPage() {
         title={editing ? `编辑专题：${editing.name}` : '新增专题'}
         open={modalOpen}
         onOpenChange={setModalOpen}
-        modalProps={{ destroyOnClose: true, width: 720 }}
+        modalProps={{ destroyOnHidden: true, width: 720 }}
         initialValues={{
           name: editing?.name,
           slug: editing?.slug,

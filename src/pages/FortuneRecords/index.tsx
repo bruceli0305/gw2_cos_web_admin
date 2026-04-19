@@ -121,7 +121,7 @@ export default function FortuneRecordsPage() {
       dataIndex: 'username',
       width: 160,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.username || '未知用户'}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.userId}</span>
         </Space>
@@ -145,7 +145,7 @@ export default function FortuneRecordsPage() {
       dataIndex: 'title',
       search: false,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.title || '-'}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.mainLine || '-'}</span>
         </Space>
@@ -164,7 +164,7 @@ export default function FortuneRecordsPage() {
       width: 180,
       search: false,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.providerId || '-'}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.model || '-'}</span>
         </Space>
@@ -176,7 +176,7 @@ export default function FortuneRecordsPage() {
       width: 220,
       search: false,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>Prompt: {record.promptVersion || '-'}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>
             Content: {record.contentVersion || '-'} / Poster: {record.posterConfigVersion || '-'}
@@ -190,7 +190,7 @@ export default function FortuneRecordsPage() {
       search: false,
       render: (_, record) =>
         record.status === 'failed' ? (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <span>{record.errorCode || '-'}</span>
             <span style={{ color: '#8c8c8c', fontSize: 12 }}>{record.errorMessage || '-'}</span>
           </Space>
@@ -264,22 +264,22 @@ export default function FortuneRecordsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="记录总量" value={summary.total} />
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="成功记录" value={summary.success} />
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="失败记录" value={summary.failed} />
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
           </Card>
         </Col>
@@ -329,7 +329,7 @@ export default function FortuneRecordsPage() {
         open={detailOpen}
         footer={null}
         width={960}
-        destroyOnClose
+        destroyOnHidden
         onCancel={() => {
           setDetailOpen(false);
           setDetailLoading(false);
@@ -344,7 +344,7 @@ export default function FortuneRecordsPage() {
         ) : !detailRecord ? (
           <div>未找到可查看的记录详情。</div>
         ) : (
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={16} style={{ width: '100%' }}>
             <Card size="small" title="基本信息">
               {renderJsonBlock({
                 id: detailRecord._id,

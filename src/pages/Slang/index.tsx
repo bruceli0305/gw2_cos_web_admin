@@ -291,25 +291,25 @@ export default function SlangPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="分组总量" value={slangSummary.groupCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前黑话词典已建立的分组数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="词条总量" value={slangSummary.termTotal} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的黑话条目总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页词条" value={slangSummary.termPageCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于快速判断当前页载入和筛选结果规模。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前工作台" value={slangSummary.workspace} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               {slangSummary.currentView}，当前页签决定你在维护词条还是分组。
@@ -367,7 +367,7 @@ export default function SlangPage() {
                   title="新增黑话"
                   open={termCreateOpen}
                   onOpenChange={setTermCreateOpen}
-                  modalProps={{ destroyOnClose: true, width: 760 }}
+                  modalProps={{ destroyOnHidden: true, width: 760 }}
                   initialValues={{ order: undefined, note: '' }}
                   onFinish={async (values) => {
                     await request('/admin/v1/slang/terms', {
@@ -422,7 +422,7 @@ export default function SlangPage() {
                   title="编辑黑话"
                   open={termEditOpen}
                   onOpenChange={setTermEditOpen}
-                  modalProps={{ destroyOnClose: true, width: 760 }}
+                  modalProps={{ destroyOnHidden: true, width: 760 }}
                   initialValues={
                     currentTerm
                       ? {
@@ -516,7 +516,7 @@ export default function SlangPage() {
                   title="新增分组"
                   open={groupCreateOpen}
                   onOpenChange={setGroupCreateOpen}
-                  modalProps={{ destroyOnClose: true, width: 680 }}
+                  modalProps={{ destroyOnHidden: true, width: 680 }}
                   onFinish={async (values) => {
                     await request('/admin/v1/slang/groups', {
                       method: 'POST',
@@ -549,7 +549,7 @@ export default function SlangPage() {
                   title="编辑分组"
                   open={groupEditOpen}
                   onOpenChange={setGroupEditOpen}
-                  modalProps={{ destroyOnClose: true, width: 680 }}
+                  modalProps={{ destroyOnHidden: true, width: 680 }}
                   initialValues={
                     currentGroup
                       ? {

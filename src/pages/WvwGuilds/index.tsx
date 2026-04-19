@@ -164,25 +164,25 @@ export default function WvwGuildsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="目录总量" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的战场公会目录条目总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="招募中" value={summary.recruiting} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果中仍在公开招募的公会数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="欧服条目" value={summary.euCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页中地区为 EU 的招募目录条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索、地区与招募状态筛选会直接影响当前目录结果。</div>
           </Card>

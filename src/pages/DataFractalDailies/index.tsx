@@ -126,25 +126,25 @@ export default function DataFractalDailiesPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="日常条目数" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前碎层日常映射表中的条目总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="覆盖层级" value={summary.uniqueScales} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前列表覆盖的碎层层级数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="层级区间" value={summary.scaleRange} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>帮助快速判断当前映射表是否覆盖目标层级段。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>本页当前展示的是完整碎层日常映射清单。</div>
           </Card>
@@ -168,7 +168,7 @@ export default function DataFractalDailiesPage() {
         title="新增碎层日常"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 680 }}
+        modalProps={{ destroyOnHidden: true, width: 680 }}
         onFinish={async (values) => {
           await request('/admin/v1/data/fractal-dailies/items', {
             method: 'POST',
@@ -202,7 +202,7 @@ export default function DataFractalDailiesPage() {
         title={`编辑：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 680 }}
+        modalProps={{ destroyOnHidden: true, width: 680 }}
         initialValues={{
           scale: current?.scale,
           id: current?.id,
@@ -242,7 +242,7 @@ export default function DataFractalDailiesPage() {
         title="导入碎层日常（JSON，覆盖全量）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
@@ -263,7 +263,7 @@ export default function DataFractalDailiesPage() {
         <Alert
           type="warning"
           showIcon
-          message="覆盖导入会替换当前碎层日常映射"
+          title="覆盖导入会替换当前碎层日常映射"
           description="请仅在你确认整包 JSON 已覆盖全部有效日常条目时使用。零散修订建议优先使用新增或编辑。"
           style={{ marginBottom: 12 }}
         />

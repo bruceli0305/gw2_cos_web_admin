@@ -28,9 +28,9 @@ type LoginResponse = {
 const capabilityCards = [
   {
     icon: <TranslationOutlined />,
-    eyebrow: '本地化',
+    eyebrow: '本地词库',
     title: '翻译缓存与黑话词典',
-    description: '在同一后台中维护双语缓存条目与社区黑话映射，减少运营切换成本。',
+    description: '在统一后台维护双语缓存与社区黑话映射，减少运营切换成本。',
   },
   {
     icon: <DatabaseOutlined />,
@@ -40,9 +40,9 @@ const capabilityCards = [
   },
   {
     icon: <LineChartOutlined />,
-    eyebrow: '运营',
+    eyebrow: '运营协作',
     title: '交易所监控与内容管理',
-    description: '查看监控池、快照任务和面向 GW2 欧服玩家的后台内容运营链路。',
+    description: '查看监控池、快照任务和面向 GW2 欧服玩家的内容运营链路。',
   },
 ];
 
@@ -299,7 +299,7 @@ export default function LoginPage() {
                 lineHeight: 1.75,
               }}
             >
-              在一个有边界的运营工作台中处理翻译、资源目录、交易所监控和后台数据同步，服务 GW2 欧服玩家场景。
+              在受限访问的运营工作台中处理翻译、资源目录、交易所监控与后台数据同步，服务面向 GW2 欧服玩家的实际内容场景。
             </div>
 
             <div
@@ -481,7 +481,7 @@ export default function LoginPage() {
                   <Alert
                     showIcon
                     type="error"
-                    message="无法登录"
+                    title="无法登录"
                     description={errorMessage}
                     style={{
                       marginBottom: 20,

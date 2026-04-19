@@ -77,27 +77,27 @@ const DEFAULT_DOC: JSONContent = {
 const GW2_NODE_DEFINITIONS: Gw2NodeDefinition[] = [
   {
     name: 'gw2-item',
-    title: 'GW2 Item',
+    title: 'GW2 物品',
     attrs: [
-      { name: 'itemId', label: 'Item ID', numeric: true, required: true },
-      { name: 'label', label: 'Label' },
+      { name: 'itemId', label: '物品 ID', numeric: true, required: true },
+      { name: 'label', label: '显示名称' },
     ],
   },
   {
     name: 'gw2-skill',
-    title: 'GW2 Skill',
+    title: 'GW2 技能',
     attrs: [
-      { name: 'skillId', label: 'Skill ID', numeric: true, required: true },
-      { name: 'label', label: 'Label' },
+      { name: 'skillId', label: '技能 ID', numeric: true, required: true },
+      { name: 'label', label: '显示名称' },
     ],
   },
   {
     name: 'gw2-trait',
-    title: 'GW2 Trait',
+    title: 'GW2 特性',
     attrs: [
-      { name: 'traitId', label: 'Trait ID', numeric: true, required: true },
-      { name: 'specializationId', label: 'Specialization ID', numeric: true },
-      { name: 'label', label: 'Label' },
+      { name: 'traitId', label: '特性 ID', numeric: true, required: true },
+      { name: 'specializationId', label: '专精 ID', numeric: true },
+      { name: 'label', label: '显示名称' },
     ],
   },
   {
@@ -106,17 +106,17 @@ const GW2_NODE_DEFINITIONS: Gw2NodeDefinition[] = [
     block: true,
     attrs: [
       { name: 'buildCode', label: 'Build Chat Link', required: true },
-      { name: 'specializationId', label: 'Specialization ID', numeric: true },
-      { name: 'label', label: 'Label' },
+      { name: 'specializationId', label: '专精 ID', numeric: true },
+      { name: 'label', label: '显示名称' },
     ],
   },
   {
     name: 'gw2-chatcode',
-    title: 'GW2 Chatcode',
+    title: 'GW2 Chat Link',
     block: true,
     attrs: [
-      { name: 'value', label: 'Chatcode', required: true },
-      { name: 'label', label: 'Label' },
+      { name: 'value', label: 'Chat Link', required: true },
+      { name: 'label', label: '显示名称' },
     ],
   },
 ];
@@ -177,7 +177,7 @@ function parseDocument(value?: string) {
   try {
     const parsed = JSON.parse(raw);
     if (!isPlainObject(parsed)) {
-      return { document: null, error: 'contentJson must be a JSON object', unsupported: [] as string[] };
+      return { document: null, error: 'contentJson 必须是 JSON 对象', unsupported: [] as string[] };
     }
 
     const unsupported = new Set<string>();
@@ -189,7 +189,7 @@ function parseDocument(value?: string) {
       unsupported: Array.from(unsupported).sort(),
     };
   } catch {
-    return { document: null, error: 'contentJson is not valid JSON', unsupported: [] as string[] };
+    return { document: null, error: 'contentJson 不是合法的 JSON', unsupported: [] as string[] };
   }
 }
 
@@ -465,7 +465,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const toggleLink = () => {
     if (!editor) return;
     const previousHref = String(editor.getAttributes('link').href || '').trim();
-    const nextHref = window.prompt('Link URL', previousHref || 'https://');
+    const nextHref = window.prompt('请输入链接地址', previousHref || 'https://');
     if (nextHref === null) return;
     const normalized = nextHref.trim();
     if (!normalized) {
@@ -497,13 +497,13 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const beforeImageUpload: UploadProps['beforeUpload'] = (file) => {
     const isAllowed = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
     if (!isAllowed) {
-      message.error('Only JPG, PNG, and WEBP images are supported');
+      message.error('仅支持 JPG、PNG 和 WEBP 图片');
       return Upload.LIST_IGNORE;
     }
 
     const isSizeOk = file.size / 1024 / 1024 <= MAX_INLINE_IMAGE_SIZE_MB;
     if (!isSizeOk) {
-      message.error('Image must be 5MB or smaller');
+      message.error('图片大小不能超过 5MB');
       return Upload.LIST_IGNORE;
     }
 
@@ -515,10 +515,10 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
       setImageUploading(true);
       const uploaded = await uploadGuideCover(options.file as File);
       imageForm.setFieldsValue({ src: uploaded.path || uploaded.url });
-      message.success('Image uploaded');
+      message.success('图片上传成功');
       options.onSuccess?.(uploaded);
     } catch (error: unknown) {
-      message.error(getErrorMessage(error, 'Image upload failed'));
+      message.error(getErrorMessage(error, '图片上传失败'));
       options.onError?.(error as Error);
     } finally {
       setImageUploading(false);
@@ -610,8 +610,8 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
           <Alert
             type="error"
             showIcon
-            title="Raw JSON required"
-            description={`${parsed.error}. Fix the JSON first, then the visual editor will become available.`}
+            title="当前只能使用原始 JSON 编辑"
+            description={`${parsed.error}。请先修复 JSON 内容，再使用可视化编辑器。`}
           />
           {rawJsonEditor}
         </Space>
@@ -628,8 +628,8 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
           <Alert
             type="warning"
             showIcon
-            title="Unsupported custom nodes detected"
-            description={`This article contains nodes or marks the visual editor does not understand yet: ${parsed.unsupported.join(', ')}. Raw JSON editing stays enabled so existing content is not lost.`}
+            title="检测到暂不支持的自定义节点"
+            description={`当前文章包含可视化编辑器暂未识别的节点或标记：${parsed.unsupported.join(', ')}。为避免现有内容丢失，页面保留原始 JSON 编辑模式。`}
           />
           {rawJsonEditor}
         </Space>
@@ -643,64 +643,64 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
       <div className="guide-richtext-editor">
         <Space wrap className="guide-richtext-toolbar">
           {markdownImportButton}
-          <Tooltip title="Paragraph">
+          <Tooltip title="正文段落">
             <Button size="small" onClick={() => editor?.chain().focus().setParagraph().run()}>
               P
             </Button>
           </Tooltip>
-          <Tooltip title="Heading 2">
+          <Tooltip title="二级标题">
             <Button size="small" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}>
               H2
             </Button>
           </Tooltip>
-          <Tooltip title="Heading 3">
+          <Tooltip title="三级标题">
             <Button size="small" onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}>
               H3
             </Button>
           </Tooltip>
-          <Tooltip title="Bold">
+          <Tooltip title="加粗">
             <Button size="small" icon={<BoldOutlined />} onClick={() => editor?.chain().focus().toggleBold().run()} />
           </Tooltip>
-          <Tooltip title="Italic">
+          <Tooltip title="斜体">
             <Button size="small" icon={<ItalicOutlined />} onClick={() => editor?.chain().focus().toggleItalic().run()} />
           </Tooltip>
-          <Tooltip title="Inline Code">
+          <Tooltip title="行内代码">
             <Button size="small" icon={<CodeOutlined />} onClick={() => editor?.chain().focus().toggleCode().run()} />
           </Tooltip>
-          <Tooltip title="Bullet List">
+          <Tooltip title="无序列表">
             <Button
               size="small"
               icon={<UnorderedListOutlined />}
               onClick={() => editor?.chain().focus().toggleBulletList().run()}
             />
           </Tooltip>
-          <Tooltip title="Ordered List">
+          <Tooltip title="有序列表">
             <Button
               size="small"
               icon={<OrderedListOutlined />}
               onClick={() => editor?.chain().focus().toggleOrderedList().run()}
             />
           </Tooltip>
-          <Tooltip title="Quote">
+          <Tooltip title="引用">
             <Button size="small" onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
-              Quote
+              引用
             </Button>
           </Tooltip>
-          <Tooltip title="Code Block">
+          <Tooltip title="代码块">
             <Button size="small" onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
-              Block
+              代码块
             </Button>
           </Tooltip>
-          <Tooltip title="Divider">
+          <Tooltip title="分割线">
             <Button size="small" icon={<InsertRowBelowOutlined />} onClick={() => editor?.chain().focus().setHorizontalRule().run()} />
           </Tooltip>
-          <Tooltip title="Link">
+          <Tooltip title="链接">
             <Button size="small" icon={<LinkOutlined />} onClick={toggleLink} />
           </Tooltip>
-          <Tooltip title="Image">
+          <Tooltip title="图片">
             <Button size="small" icon={<PictureOutlined />} onClick={() => openImageModal('create')} />
           </Tooltip>
-          <Tooltip title="Edit the currently selected image">
+          <Tooltip title="编辑当前选中的图片">
             <Button
               size="small"
               icon={<EditOutlined />}
@@ -708,7 +708,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               onClick={editSelectedImage}
             />
           </Tooltip>
-          <Tooltip title="Remove the currently selected image">
+          <Tooltip title="删除当前选中的图片">
             <Button
               size="small"
               danger
@@ -717,10 +717,10 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               onClick={removeSelectedImage}
             />
           </Tooltip>
-          <Tooltip title="Undo">
+          <Tooltip title="撤销">
             <Button size="small" icon={<UndoOutlined />} onClick={() => editor?.chain().focus().undo().run()} />
           </Tooltip>
-          <Tooltip title="Redo">
+          <Tooltip title="重做">
             <Button size="small" icon={<RedoOutlined />} onClick={() => editor?.chain().focus().redo().run()} />
           </Tooltip>
         </Space>
@@ -731,17 +731,17 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               {definition.title}
             </Button>
           ))}
-          <Tooltip title="Edit the currently selected GW2 node">
+          <Tooltip title="编辑当前选中的 GW2 节点">
             <Button
               size="small"
               icon={<EditOutlined />}
               disabled={!selectedGw2Node}
               onClick={editSelectedGw2Node}
             >
-              Edit Selected
+              编辑所选
             </Button>
           </Tooltip>
-          <Tooltip title="Remove the currently selected GW2 node">
+          <Tooltip title="删除当前选中的 GW2 节点">
             <Button
               size="small"
               danger
@@ -749,7 +749,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               disabled={!selectedGw2Node}
               onClick={removeSelectedGw2Node}
             >
-              Remove Selected
+              删除所选
             </Button>
           </Tooltip>
         </Space>
@@ -764,14 +764,14 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
         items={[
           {
             key: 'raw-json',
-            label: 'Raw JSON',
+            label: '原始 JSON',
             children: rawJsonEditor,
           },
         ]}
       />
 
       <Modal
-        title={gw2NodeModal ? `${gw2NodeModal.mode === 'create' ? 'Insert' : 'Edit'} ${gw2NodeModal.definition.title}` : 'GW2 Node'}
+        title={gw2NodeModal ? `${gw2NodeModal.mode === 'create' ? '插入' : '编辑'} ${gw2NodeModal.definition.title}` : 'GW2 节点'}
         open={!!gw2NodeModal}
         onCancel={closeGw2NodeModal}
         onOk={() => void submitGw2NodeModal()}
@@ -784,7 +784,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
                 key={attr.name}
                 name={attr.name}
                 label={attr.label}
-                rules={attr.required ? [{ required: true, message: `${attr.label} is required` }] : undefined}
+                rules={attr.required ? [{ required: true, message: `请填写${attr.label}` }] : undefined}
               >
                 {attr.numeric ? <InputNumber style={{ width: '100%' }} precision={0} /> : <Input />}
               </Form.Item>
@@ -794,7 +794,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
       </Modal>
 
       <Modal
-        title={imageModal?.mode === 'edit' ? 'Edit Image' : 'Insert Image'}
+        title={imageModal?.mode === 'edit' ? '编辑图片' : '插入图片'}
         open={!!imageModal}
         onCancel={closeImageModal}
         onOk={() => void submitImageModal()}
@@ -802,7 +802,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
       >
         <Space orientation="vertical" size={12} style={{ width: '100%' }}>
           <Typography.Text type="secondary">
-            Upload a local image to the server, or paste an existing image URL.
+            可将本地图片上传到服务器，或直接粘贴已有图片地址。
           </Typography.Text>
 
           <Upload
@@ -812,20 +812,20 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
             customRequest={uploadInlineImage}
           >
             <Button icon={imageUploading ? <LoadingOutlined /> : <UploadOutlined />} loading={imageUploading}>
-              Upload Local Image
+              上传本地图片
             </Button>
           </Upload>
 
           <Form form={imageForm} layout="vertical">
             <Form.Item
               name="src"
-              label="Image URL"
-              rules={[{ required: true, message: 'Image URL is required' }]}
+              label="图片地址"
+              rules={[{ required: true, message: '请填写图片地址' }]}
             >
-              <Input placeholder="https://example.com/image.png or /uploads/guides/..." />
+              <Input placeholder="https://example.com/image.png 或 /uploads/guides/..." />
             </Form.Item>
-            <Form.Item name="alt" label="Alt Text">
-              <Input placeholder="Optional image description" />
+            <Form.Item name="alt" label="替代文本">
+              <Input placeholder="选填，用于补充图片说明" />
             </Form.Item>
           </Form>
         </Space>

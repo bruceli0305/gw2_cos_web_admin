@@ -152,25 +152,25 @@ export default function RbacRolesPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="角色总量" value={roleSummary.totalRoles} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前后台可分配的角色模板总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="超级角色" value={roleSummary.superRoles} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>拥有全量权限、无需逐项勾选的角色数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="已配权限角色" value={roleSummary.directPermissionRoles} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前已显式绑定 permissionKeys 的普通角色数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="权限模块" value={roleSummary.permissionModules} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前权限定义覆盖的模块数量。</div>
           </Card>
@@ -191,7 +191,7 @@ export default function RbacRolesPage() {
         title="新建角色"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 860 }}
+        modalProps={{ destroyOnHidden: true, width: 860 }}
         initialValues={{ isSuper: false, permissionKeys: [] }}
         onFinish={async (values) => {
           const payload = {
@@ -239,7 +239,7 @@ export default function RbacRolesPage() {
         title={`编辑角色: ${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 860 }}
+        modalProps={{ destroyOnHidden: true, width: 860 }}
         initialValues={{
           name: current?.name,
           description: current?.description,

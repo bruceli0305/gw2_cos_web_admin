@@ -306,19 +306,19 @@ export default function DataMistlockRotationsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页条目数" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的轮换条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="手动覆盖" value={summary.manualCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页中 source=manual 的轮换条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="rotationOffset" value={cfgLoading ? '加载中' : String(cfg?.rotationOffset ?? 0)} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               上次校准：{cfg?.calibratedAt ? new Date(cfg.calibratedAt).toLocaleString('zh-CN') : '未校准'}
@@ -326,7 +326,7 @@ export default function DataMistlockRotationsPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>
               invisi 条目 {summary.invisiCount} 个；筛选条件会直接影响当前结果。
@@ -357,14 +357,14 @@ export default function DataMistlockRotationsPage() {
         title="自动校准 rotationOffset"
         open={calibOpen}
         onOpenChange={setCalibOpen}
-        modalProps={{ destroyOnClose: true, width: 720 }}
+        modalProps={{ destroyOnHidden: true, width: 720 }}
         submitter={{ submitButtonProps: { loading: calibLoading } }}
         onFinish={handleAutoCalibrate}
       >
         <Alert
           type="info"
           showIcon
-          message="按已知轮换结果反推偏移量"
+          title="按已知轮换结果反推偏移量"
           description="请填写游戏内同一天、同一层的 3 个词缀 idx。建议优先使用 95-100 层的数据做校准。"
           style={{ marginBottom: 12 }}
         />
@@ -380,7 +380,7 @@ export default function DataMistlockRotationsPage() {
         title={`编辑轮换：Day ${current?.rotationIndex ?? ''} / Scale ${current?.scale ?? ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 680 }}
+        modalProps={{ destroyOnHidden: true, width: 680 }}
         initialValues={{
           idx1: current?.instabilities?.[0]?.idx,
           idx2: current?.instabilities?.[1]?.idx,
@@ -401,7 +401,7 @@ export default function DataMistlockRotationsPage() {
         <Alert
           type="warning"
           showIcon
-          message="保存后该条轮换会标记为 manual"
+          title="保存后该条轮换会标记为 manual"
           description="后续同步 Invisi 时，这条记录会被跳过，直到你再次手工修改或重建数据。"
           style={{ marginBottom: 12 }}
         />
@@ -414,14 +414,14 @@ export default function DataMistlockRotationsPage() {
         title="粘贴 JSON 更新（离线同步）"
         open={pasteOpen}
         onOpenChange={setPasteOpen}
-        modalProps={{ destroyOnClose: true, width: 840 }}
+        modalProps={{ destroyOnHidden: true, width: 840 }}
         submitter={{ submitButtonProps: { loading: pasteLoading } }}
         onFinish={handlePasteSync}
       >
         <Alert
           type="info"
           showIcon
-          message="仅用于离线同步上游轮换数据"
+          title="仅用于离线同步上游轮换数据"
           description="请粘贴完整的 Invisi JSON，且必须同时包含 instabilities 与 instability_details 字段。"
           style={{ marginBottom: 12 }}
         />

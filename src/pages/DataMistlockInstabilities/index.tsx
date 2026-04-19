@@ -241,25 +241,25 @@ export default function DataMistlockInstabilitiesPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="词缀总量" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前词缀基础表中的全部条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前启用" value={summary.enabled} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前仍参与前台使用的词缀条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="图标已补全" value={summary.iconReady} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前已补充图标 URL 的词缀数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>本页当前展示的是完整词缀资料清单。</div>
           </Card>
@@ -283,7 +283,7 @@ export default function DataMistlockInstabilitiesPage() {
         title={`编辑：${current?.name?.en || 'Instability'} (#${current?.idx ?? ''})`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         initialValues={{
           nameZh: current?.name?.zh || '',
           iconUrl: current?.iconUrl || '',
@@ -339,14 +339,14 @@ export default function DataMistlockInstabilitiesPage() {
         title="粘贴 JSON 更新（离线同步）"
         open={pasteOpen}
         onOpenChange={setPasteOpen}
-        modalProps={{ destroyOnClose: true, width: 840 }}
+        modalProps={{ destroyOnHidden: true, width: 840 }}
         submitter={{ submitButtonProps: { loading: pasteLoading } }}
         onFinish={handlePasteSync}
       >
         <Alert
           type="info"
           showIcon
-          message="仅用于离线同步上游数据"
+          title="仅用于离线同步上游数据"
           description="请粘贴完整的 Invisi 词缀 JSON，且必须同时包含 instabilities 与 instability_details 两个字段。"
           style={{ marginBottom: 12 }}
         />

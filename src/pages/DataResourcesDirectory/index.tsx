@@ -237,25 +237,25 @@ export default function DataResourcesDirectoryPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="目录总量" value={overview?.total_count ?? '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前资源黄页目录中的公开条目总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="分类数量" value={overview?.categories?.length ?? '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前目录已建立的资源分类数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="最大分类" value={largestCategory ? `${largestCategory.name} / ${largestCategory.count}` : '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>帮助快速识别当前目录里条目最集中的资源分类。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={hasFilters ? '筛选中' : '全部目录'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索、分类和标签筛选都会直接影响下方目录结果。</div>
           </Card>
@@ -295,7 +295,7 @@ export default function DataResourcesDirectoryPage() {
         title="新建资源条目"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           await request('/admin/v1/data/resources-directory/items', {
             method: 'POST',
@@ -349,7 +349,7 @@ export default function DataResourcesDirectoryPage() {
         title={`编辑条目：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         initialValues={{
           name: current?.name,
           url: current?.url,
@@ -417,7 +417,7 @@ export default function DataResourcesDirectoryPage() {
         title="导入资源黄页（JSON，全量替换）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 820 }}
+        modalProps={{ destroyOnHidden: true, width: 820 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');

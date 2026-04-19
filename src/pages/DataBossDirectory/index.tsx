@@ -169,25 +169,25 @@ export default function DataBossDirectoryPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="Boss 总量" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前目录中已录入的副本 Boss 总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="十人本" value={summary.raidCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>归类为 raid 的 Boss 条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="进攻本" value={summary.strikeCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>归类为 strike 的 Boss 条目数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="常驻未覆盖" value={summary.permanentCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>固定标记为常驻缺失的 Boss 数量。</div>
           </Card>
@@ -212,7 +212,7 @@ export default function DataBossDirectoryPage() {
         title="新增 Boss 目录条目"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 680 }}
+        modalProps={{ destroyOnHidden: true, width: 680 }}
         initialValues={{ contentType: 'raid', isPermanentMissing: false }}
         onFinish={async (values) => {
           await request('/admin/v1/data/boss-directory/items', {
@@ -245,7 +245,7 @@ export default function DataBossDirectoryPage() {
         title={`编辑 Boss 条目：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 680 }}
+        modalProps={{ destroyOnHidden: true, width: 680 }}
         initialValues={{
           code: current?.code,
           name: current?.name,
@@ -281,7 +281,7 @@ export default function DataBossDirectoryPage() {
         title="导入 Boss 目录（JSON，全量替换）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');

@@ -476,7 +476,7 @@ export default function DataMarketWatchPage() {
     >
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="监控池规模" value={poolMeta ? poolTotal : '-'} suffix={poolMeta ? `/ ${poolMax}` : undefined} />
             <div style={{ marginTop: 8 }}>
               <Progress percent={poolUsagePercent} showInfo={false} strokeColor="#1677ff" />
@@ -484,19 +484,19 @@ export default function DataMarketWatchPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="剩余容量" value={poolMeta ? remainingCapacity : '-'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>池满前还可继续加入的唯一物品数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="采集节奏" value="10 分钟" />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>监控池物品按固定节奏执行官方价格快照采集。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={hasPoolFilters ? '筛选中' : '全部监控'} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>上方操作区覆盖手动采集、元数据同步和低频清理。</div>
           </Card>
@@ -533,76 +533,84 @@ export default function DataMarketWatchPage() {
       <ProCard
         tabs={{
           type: 'card',
+          items: [
+            {
+              key: 'pool',
+              label: '监控池',
+              children: (
+                <ProTable<PoolItem>
+                  actionRef={poolActionRef}
+                  rowKey="itemId"
+                  cardBordered
+                  columns={poolColumns}
+                  {...poolTableStateProps}
+                  request={async (params) => {
+                    const { current, pageSize, itemId, pinned } = params as PoolQueryParams;
+                    setHasPoolFilters(
+                      (itemId !== undefined && String(itemId) !== '') ||
+                        (pinned !== undefined && String(pinned) !== '')
+                    );
+
+                    try {
+                      const res = await request<PoolListResp>('/admin/v1/data/market-watch/pool', {
+                        params: {
+                          page: current || 1,
+                          limit: pageSize || 20,
+                          itemId: itemId || '',
+                          pinned: pinned === undefined ? '' : String(pinned),
+                        },
+                      });
+                      setPoolMeta({ total: res.total, max: res.max });
+                      setPoolErrorMessage(null);
+                      return { data: res.items, total: res.total, success: true };
+                    } catch (error: unknown) {
+                      setPoolErrorMessage(getErrorMessage(error, '加载交易所监控池失败'));
+                      throw error;
+                    }
+                  }}
+                />
+              ),
+            },
+            {
+              key: 'tasks',
+              label: '任务记录',
+              children: (
+                <ProTable<TaskRun>
+                  actionRef={taskActionRef}
+                  rowKey="_id"
+                  cardBordered
+                  columns={taskColumns}
+                  locale={{ emptyText: '当前还没有任何交易所监控任务记录。' }}
+                  request={async (params) => {
+                    const { taskName } = params as TaskQueryParams;
+                    try {
+                      const res = await request<{ items: TaskRun[] }>('/admin/v1/data/market-watch/task-runs', {
+                        params: {
+                          taskName: taskName || 'snapshot_10m',
+                          limit: 50,
+                        },
+                      });
+                      setTaskErrorMessage(null);
+                      return { data: res.items, total: res.items.length, success: true };
+                    } catch (error: unknown) {
+                      setTaskErrorMessage(getErrorMessage(error, '加载交易所监控任务记录失败'));
+                      throw error;
+                    }
+                  }}
+                  pagination={false}
+                  search={{ labelWidth: 'auto', searchText: '应用筛选', resetText: '清空筛选' }}
+                />
+              ),
+            },
+          ],
         }}
-      >
-        <ProCard.TabPane key="pool" tab="监控池">
-          <ProTable<PoolItem>
-            actionRef={poolActionRef}
-            rowKey="itemId"
-            cardBordered
-            columns={poolColumns}
-            {...poolTableStateProps}
-            request={async (params) => {
-              const { current, pageSize, itemId, pinned } = params as PoolQueryParams;
-              setHasPoolFilters(
-                (itemId !== undefined && String(itemId) !== '') ||
-                  (pinned !== undefined && String(pinned) !== '')
-              );
-
-              try {
-                const res = await request<PoolListResp>('/admin/v1/data/market-watch/pool', {
-                  params: {
-                    page: current || 1,
-                    limit: pageSize || 20,
-                    itemId: itemId || '',
-                    pinned: pinned === undefined ? '' : String(pinned),
-                  },
-                });
-                setPoolMeta({ total: res.total, max: res.max });
-                setPoolErrorMessage(null);
-                return { data: res.items, total: res.total, success: true };
-              } catch (error: unknown) {
-                setPoolErrorMessage(getErrorMessage(error, '加载交易所监控池失败'));
-                throw error;
-              }
-            }}
-          />
-        </ProCard.TabPane>
-
-        <ProCard.TabPane key="tasks" tab="任务记录">
-          <ProTable<TaskRun>
-            actionRef={taskActionRef}
-            rowKey="_id"
-            cardBordered
-            columns={taskColumns}
-            locale={{ emptyText: '当前还没有任何交易所监控任务记录。' }}
-            request={async (params) => {
-              const { taskName } = params as TaskQueryParams;
-              try {
-                const res = await request<{ items: TaskRun[] }>('/admin/v1/data/market-watch/task-runs', {
-                  params: {
-                    taskName: taskName || 'snapshot_10m',
-                    limit: 50,
-                  },
-                });
-                setTaskErrorMessage(null);
-                return { data: res.items, total: res.items.length, success: true };
-              } catch (error: unknown) {
-                setTaskErrorMessage(getErrorMessage(error, '加载交易所监控任务记录失败'));
-                throw error;
-              }
-            }}
-            pagination={false}
-            search={{ labelWidth: 'auto', searchText: '应用筛选', resetText: '清空筛选' }}
-          />
-        </ProCard.TabPane>
-      </ProCard>
+      />
 
       <ModalForm<AddPoolFormValues>
         title="添加物品到监控池"
         open={addOpen}
         onOpenChange={setAddOpen}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{ pinned: false }}
         onFinish={async (values) => {
           const raw = String(values.itemId || '').trim();

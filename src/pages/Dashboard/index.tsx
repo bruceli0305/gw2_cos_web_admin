@@ -175,7 +175,7 @@ export default function DashboardPage() {
         icon: <UserOutlined style={{ color: '#1677ff' }} />,
         metaLabel: '今日新增',
         metaValue: statValue(hasData, data?.users.today),
-        helper: '当前前台玩家账号总数，以及今天新增的注册量。',
+        helper: '当前前台玩家账号总量，以及今天新增的注册数量。',
         progressPercent: userGrowthPercent,
         progressColor: '#1677ff',
       },
@@ -204,7 +204,7 @@ export default function DashboardPage() {
         icon: <DatabaseOutlined style={{ color: '#fa8c16' }} />,
         metaLabel: '团本招募',
         metaValue: hasData ? `${data?.content.raid ?? 0} 条` : '-',
-        helper: '当前统计返回的资源页、传奇蓝图与团本招募总量。',
+        helper: '当前统计返回的资源黄页、传奇蓝图与团本招募总量。',
       },
     ];
   }, [contentTotal, data, hasData, userGrowthPercent]);
@@ -342,7 +342,7 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ marginTop: 20, maxWidth: 720, color: 'rgba(226,232,240,0.76)', fontSize: 15, lineHeight: 1.8 }}>
-              这里展示协同学院后台最核心的运营状态，包括玩家增长、翻译缓存、内容库存和服务运行情况。后端统计契约不变，只把现有数据重新组织成更清晰、可读、可刷新的首页看板。
+              这里展示协同学院后台最核心的运营状态，包括玩家增长、翻译缓存、内容库存和服务运行情况。后端统计契约保持不变，只把现有数据重新组织成更清晰、可读、可刷新的首页看板。
             </div>
 
             <div style={{ marginTop: 18 }}>
@@ -377,7 +377,7 @@ export default function DashboardPage() {
           showIcon
           type="error"
           style={{ marginBottom: 24, borderRadius: 16 }}
-          message="首页看板暂时不可用"
+          title="首页看板暂时不可用"
           description={errorMessage}
           action={(
             <Button size="small" onClick={() => void loadStats()}>
@@ -390,7 +390,7 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 8 }}>
         {overviewCards.map((item) => (
           <Col key={item.key} xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-            <Card bordered={false} loading={loading && !hasData} style={dashboardCardStyle} styles={{ body: dashboardCardBodyStyle }}>
+            <Card variant="borderless" loading={loading && !hasData} style={dashboardCardStyle} styles={{ body: dashboardCardBodyStyle }}>
               <Statistic title={item.title} value={item.value} prefix={item.icon} />
 
               <div style={summaryFooterStyle}>
@@ -415,14 +415,14 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12} style={{ display: 'flex' }}>
           <Card
-            bordered={false}
+            variant="borderless"
             loading={loading && !hasData}
             title="内容库存分布"
             extra={<Tag color="blue">内容面</Tag>}
             style={dashboardCardStyle}
             styles={{ body: dashboardCardBodyStyle }}
           >
-            <Space direction="vertical" size={18} style={{ width: '100%' }}>
+            <Space orientation="vertical" size={18} style={{ width: '100%' }}>
               {[
                 { label: '资源黄页', value: data?.content.directory ?? 0, color: '#1677ff' },
                 { label: '传奇蓝图', value: data?.content.legendary ?? 0, color: '#722ed1' },
@@ -457,7 +457,7 @@ export default function DashboardPage() {
 
         <Col xs={24} xl={12} style={{ display: 'flex' }}>
           <Card
-            bordered={false}
+            variant="borderless"
             loading={loading && !hasData}
             title="系统状态"
             extra={<Tag color={errorMessage ? 'error' : loading ? 'processing' : 'success'}>{errorMessage ? '异常' : loading ? '刷新中' : '正常'}</Tag>}
@@ -466,12 +466,12 @@ export default function DashboardPage() {
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
-                <Card size="small" bordered={false} style={{ borderRadius: 18, background: '#f8fafc' }}>
+                <Card size="small" variant="borderless" style={{ borderRadius: 18, background: '#f8fafc' }}>
                   <Statistic title="运行时长" value={hasData ? formatUptime(data?.system.uptime) : '-'} prefix={<FieldTimeOutlined />} />
                 </Card>
               </Col>
               <Col xs={24} md={12}>
-                <Card size="small" bordered={false} style={{ borderRadius: 18, background: '#f8fafc' }}>
+                <Card size="small" variant="borderless" style={{ borderRadius: 18, background: '#f8fafc' }}>
                   <Statistic title="RSS 内存" value={hasData ? formatBytes(data?.system.memory?.rss) : '-'} prefix={<CloudServerOutlined />} />
                 </Card>
               </Col>
@@ -501,7 +501,7 @@ export default function DashboardPage() {
 
         <Col xs={24} xl={12} style={{ display: 'flex' }}>
           <Card
-            bordered={false}
+            variant="borderless"
             loading={loading && !hasData}
             title="数据就绪情况"
             extra={<Tag color="cyan">运维视角</Tag>}
@@ -516,7 +516,7 @@ export default function DashboardPage() {
 
         <Col xs={24} xl={12} style={{ display: 'flex' }}>
           <Card
-            bordered={false}
+            variant="borderless"
             loading={loading && !hasData}
             title="当前快照"
             extra={<Tag color="purple">摘要</Tag>}

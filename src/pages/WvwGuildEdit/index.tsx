@@ -331,25 +331,25 @@ export default function WvwGuildEditPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="编辑模式" value={pageSummary.mode} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前表单是在创建新招募页，还是编辑已有招募页。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="招募状态" value={pageSummary.recruiting} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>对应前台目录上的当前招募展示状态。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="团表 / FAQ" value={`${pageSummary.scheduleCount} / ${pageSummary.faqCount}`} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前文档里已经配置的团表行数与常见问题数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="语音 / 行动卡" value={`${pageSummary.voicePlatform} / ${pageSummary.operationCardCount}`} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>用于快速判断当前落地页的沟通渠道与行动模块数量。</div>
           </Card>
@@ -434,9 +434,13 @@ export default function WvwGuildEditPage() {
         <ProCard
           tabs={{
             type: 'card',
-          }}
-        >
-          <ProCard.TabPane key="base" tab="基础信息">
+            items: [
+              {
+                key: 'base',
+                label: '基础信息',
+                children: (
+                  <>
+
             <ProFormText name="slug" label="页面标识" rules={[{ required: true }]} tooltip="只能小写字母/数字/短横线" />
             <ProFormText name="name" label="公会名" rules={[{ required: true }]} fieldProps={{ placeholder: '例如：黑曜石攻城战报' }} />
             <ProFormText name="tag" label="公会标签" rules={[{ required: true }]} fieldProps={{ placeholder: '例如：OVO' }} />
@@ -523,9 +527,16 @@ export default function WvwGuildEditPage() {
             />
 
             <ProFormTextArea name="summary" label="一句话简介" fieldProps={{ rows: 3 }} rules={[{ required: true }]} />
-          </ProCard.TabPane>
+          
+                  </>
+                ),
+              },
+              {
+                key: 'landing',
+                label: '单页内容',
+                children: (
+                  <>
 
-          <ProCard.TabPane key="landing" tab="单页内容">
             <ProFormTextArea name="highlightsText" label="亮点（每行一条）" fieldProps={{ rows: 6 }} rules={[{ required: true }]} />
 
             <ProFormTextArea name={['page', 'heroPoem']} label="首屏短诗" fieldProps={{ rows: 2 }} rules={[{ required: true }]} />
@@ -585,9 +596,16 @@ export default function WvwGuildEditPage() {
             <ProFormText name={['page', 'footerTip']} label="页脚提示" rules={[{ required: true }]} />
             <ProFormText name={['page', 'footerDisclaimerTitle']} label="免责声明标题" rules={[{ required: true }]} />
             <ProFormTextArea name={['page', 'footerDisclaimer']} label="免责声明内容" fieldProps={{ rows: 3 }} rules={[{ required: true }]} />
-          </ProCard.TabPane>
+          
+                  </>
+                ),
+              },
+              {
+                key: 'req',
+                label: '要求 / 团表 / 常见问题',
+                children: (
+                  <>
 
-          <ProCard.TabPane key="req" tab="要求 / 团表 / 常见问题">
             <ProFormTextArea name="requirementsMustText" label="必须（每行一条）" fieldProps={{ rows: 6 }} rules={[{ required: true }]} />
             <ProFormTextArea name="requirementsExpectText" label="期望（每行一条）" fieldProps={{ rows: 6 }} rules={[{ required: true }]} />
             <ProFormTextArea name="requirementsNotFitText" label="不适合（每行一条）" fieldProps={{ rows: 6 }} rules={[{ required: true }]} />
@@ -621,8 +639,13 @@ export default function WvwGuildEditPage() {
               <ProFormText name="q" label="问题" rules={[{ required: true }]} />
               <ProFormTextArea name="a" label="回答" fieldProps={{ rows: 3 }} rules={[{ required: true }]} />
             </ProFormList>
-          </ProCard.TabPane>
-        </ProCard>
+          
+                  </>
+                ),
+              },
+            ],
+          }}
+        />
       </ProForm>
     </PageContainer>
   );

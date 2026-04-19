@@ -86,7 +86,7 @@ export default function FortuneContentPage() {
       title: '标题 / 宜忌',
       dataIndex: 'titleThemes',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>标题主题 {record.titleThemes.length} 条</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>
             宜 {record.yiPool.length} / 忌 {record.jiPool.length}
@@ -98,7 +98,7 @@ export default function FortuneContentPage() {
       title: '幸运元素池',
       dataIndex: 'luckyProfessionPool',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>职业 {record.luckyProfessionPool.length} / 武器 {record.luckyWeaponPool.length}</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>
             地图 {record.luckyMapPool.length} / 颜色 {record.luckyColorPool.length} / 城市 {record.luckyCityPool.length}
@@ -110,7 +110,7 @@ export default function FortuneContentPage() {
       title: '语境标签',
       dataIndex: 'worldTags',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.worldTags.length} 条</span>
           <span style={{ color: '#8c8c8c', fontSize: 12 }}>
             toneRules {record.toneRules.length} 条
@@ -225,7 +225,7 @@ export default function FortuneContentPage() {
           setFormOpen(open);
           if (!open) setEditing(null);
         }}
-        modalProps={{ destroyOnClose: true }}
+        modalProps={{ destroyOnHidden: true }}
         initialValues={{
           version: editing?.version,
           titleThemesText: joinLineArray(editing?.titleThemes),

@@ -162,25 +162,25 @@ export default function DataResourcesRecommendedPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="推荐总量" value={summary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的推荐资源总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="热门条目" value={summary.hotCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果中被标记为热门的资源数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="资源类型" value={summary.kindCount} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页推荐资源覆盖的类型数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={summary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>搜索关键字会直接影响当前推荐资源结果。</div>
           </Card>
@@ -225,7 +225,7 @@ export default function DataResourcesRecommendedPage() {
         title="新增推荐资源"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           await request('/admin/v1/data/resources-recommended/items', {
             method: 'POST',
@@ -271,7 +271,7 @@ export default function DataResourcesRecommendedPage() {
         title={`编辑：${current?.name || ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         initialValues={{
           name: current?.name,
           url: current?.url,
@@ -328,7 +328,7 @@ export default function DataResourcesRecommendedPage() {
         title="导入推荐资源（JSON，覆盖全量）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 780 }}
+        modalProps={{ destroyOnHidden: true, width: 780 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
@@ -349,7 +349,7 @@ export default function DataResourcesRecommendedPage() {
         <Alert
           type="warning"
           showIcon
-          message="覆盖导入会替换当前推荐资源清单"
+          title="覆盖导入会替换当前推荐资源清单"
           description="仅在你确认整包推荐资源 JSON 已完整覆盖当前前台推荐位时使用。零散修改建议优先使用单条编辑。"
           style={{ marginBottom: 12 }}
         />

@@ -164,25 +164,25 @@ export default function DataLegendaryBlueprintsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="蓝图总量" value={tableSummary.total} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前查询结果对应的蓝图总数。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页分类数" value={tableSummary.categories} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页结果里涉及的蓝图分类数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前页世代数" value={tableSummary.generations} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>当前页结果覆盖的传奇世代数量。</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} xl={6} style={{ display: 'flex' }}>
-          <Card size="small" bordered={false} style={{ width: '100%', borderRadius: 20 }}>
+          <Card size="small" variant="borderless" style={{ width: '100%', borderRadius: 20 }}>
             <Statistic title="当前视图" value={tableSummary.currentView} />
             <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>筛选器会直接影响当前页看到的蓝图范围。</div>
           </Card>
@@ -234,7 +234,7 @@ export default function DataLegendaryBlueprintsPage() {
         title="导入传奇蓝图（JSON，全量覆盖）"
         open={importOpen}
         onOpenChange={setImportOpen}
-        modalProps={{ destroyOnClose: true, width: 780 }}
+        modalProps={{ destroyOnHidden: true, width: 780 }}
         onFinish={async (values) => {
           return new Promise<boolean>((resolve) => {
             Modal.confirm({
@@ -267,7 +267,7 @@ export default function DataLegendaryBlueprintsPage() {
         <Alert
           type="warning"
           showIcon
-          message="危险操作"
+          title="危险操作"
           description="该导入会清空所有传奇蓝图，再执行整包写入。除非你明确需要全量重建，否则请优先使用“导入单条（覆盖 / 新增）”。"
           style={{ marginBottom: 12 }}
         />
@@ -285,7 +285,7 @@ export default function DataLegendaryBlueprintsPage() {
         title="导入单条传奇蓝图（JSON，按 blueprintId 覆盖 / 新增）"
         open={singleImportOpen}
         onOpenChange={setSingleImportOpen}
-        modalProps={{ destroyOnClose: true, width: 760 }}
+        modalProps={{ destroyOnHidden: true, width: 760 }}
         onFinish={async (values) => {
           try {
             const json = JSON.parse(values.jsonText || '');
@@ -320,7 +320,7 @@ export default function DataLegendaryBlueprintsPage() {
         title={`编辑蓝图 JSON（覆盖保存）${editingId ? `：${editingId}` : ''}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        modalProps={{ destroyOnClose: true, width: 840 }}
+        modalProps={{ destroyOnHidden: true, width: 840 }}
         initialValues={{ jsonText: editingJsonText }}
         onFinish={async (values) => {
           try {
