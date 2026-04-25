@@ -136,6 +136,19 @@ export default function GuideArticlesPage() {
       ),
     },
     {
+      title: '推荐/加精',
+      dataIndex: 'isRecommended',
+      width: 180,
+      search: false,
+      render: (_, record) => (
+        <Space wrap>
+          {record.isRecommended ? <Tag color="gold">首页推荐</Tag> : null}
+          {record.isFeatured ? <Tag color="blue">精选导读</Tag> : null}
+          {!record.isRecommended && !record.isFeatured ? '-': null}
+        </Space>
+      ),
+    },
+    {
       title: '更新时间',
       dataIndex: 'updatedAt',
       valueType: 'dateTime',

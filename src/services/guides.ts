@@ -45,6 +45,8 @@ export type GuideArticleAdmin = {
   authorName?: string;
   publishedAt?: string;
   versionLabel?: string;
+  isFeatured: boolean;
+  isRecommended: boolean;
   toc: GuideTocItem[];
   gw2Refs?: GuideGw2Refs;
   deleted: boolean;
@@ -95,6 +97,8 @@ export type GuideArticleWritePayload = {
   canonicalUrl?: string;
   authorName?: string;
   versionLabel?: string;
+  isFeatured?: boolean;
+  isRecommended?: boolean;
 };
 
 export type GuideTaxonomyWritePayload = {

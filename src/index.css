@@ -71,10 +71,24 @@ button {
   background: transparent;
 }
 .guide-richtext-editor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 720px;
+  min-height: 520px;
   border: 1px solid #d9d9d9;
   border-radius: 8px;
   background: #fff;
   overflow: hidden;
+  resize: vertical;
+}
+
+.guide-richtext-toolbar-shell {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .guide-richtext-toolbar {
@@ -90,11 +104,14 @@ button {
 }
 
 .guide-richtext-surface {
-  min-height: 360px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .guide-richtext-surface .tiptap {
-  min-height: 320px;
+  min-height: 100%;
   padding: 16px;
   outline: none;
   overflow-wrap: anywhere;
@@ -107,6 +124,7 @@ button {
 .guide-richtext-surface .tiptap p,
 .guide-richtext-surface .tiptap ul,
 .guide-richtext-surface .tiptap ol,
+.guide-richtext-surface .tiptap [data-type='taskList'],
 .guide-richtext-surface .tiptap blockquote,
 .guide-richtext-surface .tiptap pre,
 .guide-richtext-surface .tiptap h2,
@@ -118,6 +136,50 @@ button {
 .guide-richtext-surface .tiptap ul,
 .guide-richtext-surface .tiptap ol {
   padding-left: 24px;
+}
+
+.guide-richtext-surface .tiptap [data-type='taskList'] {
+  margin: 0 0 16px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.guide-richtext-surface .tiptap ul {
+  list-style: disc;
+}
+
+.guide-richtext-surface .tiptap ol {
+  list-style: decimal;
+}
+
+.guide-richtext-surface .tiptap li {
+  display: list-item;
+}
+
+.guide-richtext-surface .tiptap [data-type='taskItem'] {
+  position: relative;
+  display: block;
+  margin: 0 0 10px;
+  padding-left: 28px;
+  list-style: none;
+}
+
+.guide-richtext-surface .tiptap [data-type='taskItem']::before {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #2563eb;
+  content: '☐';
+}
+
+.guide-richtext-surface .tiptap [data-type='taskItem'][data-checked='true']::before {
+  content: '☑';
+}
+
+.guide-richtext-surface .tiptap [data-type='taskItem'] > p {
+  margin-bottom: 0;
 }
 
 .guide-richtext-surface .tiptap blockquote {
@@ -139,6 +201,31 @@ button {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+.guide-richtext-surface .tiptap table {
+  width: 100%;
+  margin-block: 0 16px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.guide-richtext-surface .tiptap th,
+.guide-richtext-surface .tiptap td {
+  border: 1px solid #d9d9d9;
+  padding: 10px 12px;
+  vertical-align: top;
+}
+
+.guide-richtext-surface .tiptap th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: left;
+}
+
+.guide-richtext-surface .tiptap td > :last-child,
+.guide-richtext-surface .tiptap th > :last-child {
+  margin-bottom: 0;
 }
 
 .guide-richtext-surface .tiptap .guide-gw2-inline-token {

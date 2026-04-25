@@ -14,10 +14,10 @@ import {
   UploadOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
-import { Node } from '@tiptap/core';
+import { Mark, Node, mergeAttributes } from '@tiptap/core';
 import { Alert, Button, Collapse, Form, Input, InputNumber, Modal, Space, Tooltip, Typography, Upload, message } from 'antd';
 import type { UploadProps } from 'antd';
-import type { JSONContent } from '@tiptap/react';
+import type { Editor, JSONContent } from '@tiptap/react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -58,6 +58,8 @@ type Gw2NodeModalState = {
 type GuideImageFormValues = {
   src?: string;
   alt?: string;
+  width?: string;
+  align?: 'left' | 'center' | 'right';
 };
 
 type ImageModalState = {
@@ -134,11 +136,335 @@ const SUPPORTED_NODE_TYPES = new Set([
   'horizontalRule',
   'image',
   'hardBreak',
+  'table',
+  'tableRow',
+  'tableCell',
+  'tableHeader',
+  'taskList',
+  'taskItem',
   ...GW2_NODE_DEFINITIONS.map((item) => item.name),
 ]);
 
-const SUPPORTED_MARK_TYPES = new Set(['bold', 'italic', 'code', 'link']);
+const SUPPORTED_MARK_TYPES = new Set(['bold', 'italic', 'underline', 'strike', 'code', 'link', 'textColor']);
 const MAX_INLINE_IMAGE_SIZE_MB = 5;
+
+function normalizeImageWidth(value: unknown): string | null {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return `${raw}px`;
+  if (/^\d+(\.\d+)?(px|%)$/.test(raw)) return raw;
+  return null;
+}
+
+function normalizeImageAlign(value: unknown): 'left' | 'center' | 'right' | null {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'left' || raw === 'center' || raw === 'right') return raw;
+  return null;
+}
+
+function buildImageStyle(width: unknown, align: unknown) {
+  const normalizedWidth = normalizeImageWidth(width);
+  const normalizedAlign = normalizeImageAlign(align);
+  const styles: string[] = [];
+
+  if (normalizedWidth) {
+    styles.push(`width: ${normalizedWidth}`);
+  }
+
+  if (normalizedAlign === 'center') {
+    styles.push('display: block', 'margin-left: auto', 'margin-right: auto');
+  } else if (normalizedAlign === 'right') {
+    styles.push('display: block', 'margin-left: auto', 'margin-right: 0');
+  } else if (normalizedAlign === 'left') {
+    styles.push('display: block', 'margin-left: 0', 'margin-right: auto');
+  }
+
+  return styles.join('; ');
+}
+
+function normalizeTextColor(value: unknown): string | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  return raw;
+}
+
+function normalizeTableAlign(value: unknown): 'left' | 'center' | 'right' | null {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'left' || raw === 'center' || raw === 'right') return raw;
+  return null;
+}
+
+function renderTableAlign(alignment: unknown) {
+  const align = normalizeTableAlign(alignment);
+  if (!align) return {};
+  return {
+    'data-align': align,
+    style: `text-align: ${align};`,
+  };
+}
+
+const GuideImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-width') || element.style.width || null,
+        renderHTML: (attributes) => {
+          const width = normalizeImageWidth(attributes.width);
+          return width ? { 'data-width': width } : {};
+        },
+      },
+      align: {
+        default: 'center',
+        parseHTML: (element) => normalizeImageAlign(element.getAttribute('data-align')) || 'center',
+        renderHTML: (attributes) => {
+          const align = normalizeImageAlign(attributes.align);
+          return align ? { 'data-align': align } : {};
+        },
+      },
+    };
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const width = normalizeImageWidth(HTMLAttributes.width);
+    const align = normalizeImageAlign(HTMLAttributes.align) || 'center';
+    const style = buildImageStyle(width, align);
+
+    return [
+      'img',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        ...(width ? { 'data-width': width } : {}),
+        'data-align': align,
+        ...(style ? { style } : {}),
+      }),
+    ];
+  },
+});
+
+const GuideCodeBlock = Node.create({
+  name: 'codeBlock',
+  group: 'block',
+  content: 'text*',
+  marks: '',
+  code: true,
+  defining: true,
+
+  addAttributes() {
+    return {
+      language: {
+        default: null,
+        parseHTML: (element) => {
+          const codeElement = element.querySelector('code');
+          const className = codeElement?.getAttribute('class') || '';
+          const match = /language-([A-Za-z0-9_+-]+)/.exec(className);
+          return (
+            String(element.getAttribute('data-language') || match?.[1] || '').trim() || null
+          );
+        },
+        renderHTML: (attributes) => {
+          const language = String(attributes.language || '').trim();
+          return language ? { 'data-language': language } : {};
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'pre' }];
+  },
+
+  renderHTML({ HTMLAttributes, node }) {
+    const language = String(node.attrs.language || '').trim();
+    return [
+      'pre',
+      mergeAttributes(HTMLAttributes, language ? { 'data-language': language } : {}),
+      ['code', language ? { class: `language-${language}` } : {}, 0],
+    ];
+  },
+
+  addCommands() {
+    return {
+      setCodeBlock:
+        (attributes) =>
+        ({ commands }) =>
+          commands.setNode(this.name, attributes),
+      toggleCodeBlock:
+        (attributes) =>
+        ({ commands }) =>
+          commands.toggleNode(this.name, 'paragraph', attributes),
+    };
+  },
+});
+
+const GuideUnderline = Mark.create({
+  name: 'underline',
+
+  parseHTML() {
+    return [
+      { tag: 'u' },
+      {
+        style: 'text-decoration',
+        getAttrs: (value) => (String(value || '').includes('underline') ? {} : false),
+      },
+    ];
+  },
+
+  renderHTML() {
+    return ['u', 0];
+  },
+});
+
+const GuideTextColor = Mark.create({
+  name: 'textColor',
+
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element) => normalizeTextColor(element.style.color),
+        renderHTML: (attributes) => {
+          const color = normalizeTextColor(attributes.color);
+          if (!color) return {};
+          return {
+            'data-guide-text-color': color,
+            style: `color: ${color};`,
+          };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'span[data-guide-text-color]',
+      },
+      {
+        style: 'color',
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['span', HTMLAttributes, 0];
+  },
+});
+
+const GuideTable = Node.create({
+  name: 'table',
+  group: 'block',
+  content: 'tableRow+',
+
+  parseHTML() {
+    return [{ tag: 'table' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['table', HTMLAttributes, ['tbody', 0]];
+  },
+});
+
+const GuideTableRow = Node.create({
+  name: 'tableRow',
+  content: '(tableHeader|tableCell)+',
+
+  parseHTML() {
+    return [{ tag: 'tr' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['tr', HTMLAttributes, 0];
+  },
+});
+
+const GuideTableCell = Node.create({
+  name: 'tableCell',
+  content: 'block+',
+
+  addAttributes() {
+    return {
+      align: {
+        default: null,
+        parseHTML: (element) =>
+          normalizeTableAlign(element.getAttribute('data-align') || element.style.textAlign),
+        renderHTML: (attributes) => renderTableAlign(attributes.align),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'td' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['td', HTMLAttributes, 0];
+  },
+});
+
+const GuideTableHeader = Node.create({
+  name: 'tableHeader',
+  content: 'block+',
+
+  addAttributes() {
+    return {
+      align: {
+        default: null,
+        parseHTML: (element) =>
+          normalizeTableAlign(element.getAttribute('data-align') || element.style.textAlign),
+        renderHTML: (attributes) => renderTableAlign(attributes.align),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'th' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['th', HTMLAttributes, 0];
+  },
+});
+
+const GuideTaskList = Node.create({
+  name: 'taskList',
+  group: 'block',
+  content: 'taskItem+',
+
+  parseHTML() {
+    return [{ tag: 'ul[data-type="taskList"]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['ul', mergeAttributes(HTMLAttributes, { 'data-type': 'taskList' }), 0];
+  },
+});
+
+const GuideTaskItem = Node.create({
+  name: 'taskItem',
+  content: 'paragraph block*',
+  defining: true,
+
+  addAttributes() {
+    return {
+      checked: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-checked') === 'true',
+        renderHTML: (attributes) => ({
+          'data-checked': attributes.checked ? 'true' : 'false',
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'li[data-type="taskItem"]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['li', mergeAttributes(HTMLAttributes, { 'data-type': 'taskItem' }), 0];
+  },
+});
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -338,7 +664,131 @@ function getSelectedImage(editor: ReturnType<typeof useEditor> | null): GuideIma
   return {
     src: typeof attrs.src === 'string' ? attrs.src : '',
     alt: typeof attrs.alt === 'string' ? attrs.alt : '',
+    width: typeof attrs.width === 'string' ? attrs.width : '',
+    align: normalizeImageAlign(attrs.align) || 'center',
   };
+}
+
+function getSelectedTableContext(editor: ReturnType<typeof useEditor> | null) {
+  if (!editor) return null;
+
+  const { $from } = editor.state.selection;
+  let tableDepth = -1;
+  let rowDepth = -1;
+  let cellDepth = -1;
+
+  for (let depth = $from.depth; depth >= 0; depth -= 1) {
+    const nodeName = $from.node(depth).type.name;
+    if (cellDepth < 0 && (nodeName === 'tableCell' || nodeName === 'tableHeader')) {
+      cellDepth = depth;
+      continue;
+    }
+    if (rowDepth < 0 && nodeName === 'tableRow') {
+      rowDepth = depth;
+      continue;
+    }
+    if (nodeName === 'table') {
+      tableDepth = depth;
+      break;
+    }
+  }
+
+  if (tableDepth < 0 || rowDepth < 0 || cellDepth < 0) {
+    return null;
+  }
+
+  return {
+    tableDepth,
+    rowDepth,
+    cellDepth,
+    tablePos: $from.before(tableDepth),
+    tableNode: $from.node(tableDepth),
+    rowNode: $from.node(rowDepth),
+    cellNode: $from.node(cellDepth),
+    rowIndex: $from.index(tableDepth),
+    colIndex: $from.index(rowDepth),
+  };
+}
+
+function getTableSelectionState(editor: ReturnType<typeof useEditor> | null) {
+  const context = getSelectedTableContext(editor);
+  if (!context) return null;
+
+  const currentRow = context.rowNode.toJSON() as JSONContent;
+  const isHeaderRow =
+    context.rowIndex === 0 &&
+    Array.isArray(currentRow.content) &&
+    currentRow.content.length > 0 &&
+    currentRow.content.every((cell) => cell.type === 'tableHeader');
+
+  return {
+    rowIndex: context.rowIndex,
+    colIndex: context.colIndex,
+    rowCount: context.tableNode.childCount,
+    colCount: context.rowNode.childCount,
+    isHeaderRow,
+    canInsertRowBefore: !isHeaderRow,
+    canRemoveRow: !isHeaderRow && context.tableNode.childCount > 1,
+  };
+}
+
+function createEmptyParagraphNode(): JSONContent {
+  return {
+    type: 'paragraph',
+    content: [],
+  };
+}
+
+function getTableCellAttrs(cell: JSONContent | undefined) {
+  if (!cell || !isPlainObject(cell.attrs)) return undefined;
+  const align = normalizeTableAlign(cell.attrs.align);
+  return align ? { align } : undefined;
+}
+
+function createEmptyTableCellLike(
+  cell: JSONContent | undefined,
+  forcedType?: 'tableCell' | 'tableHeader'
+): JSONContent {
+  return {
+    type: forcedType || (cell?.type === 'tableHeader' ? 'tableHeader' : 'tableCell'),
+    ...(getTableCellAttrs(cell) ? { attrs: getTableCellAttrs(cell) } : {}),
+    content: [createEmptyParagraphNode()],
+  };
+}
+
+function updateSelectedTable(
+  editor: ReturnType<typeof useEditor> | null,
+  updater: (table: JSONContent, context: NonNullable<ReturnType<typeof getSelectedTableContext>>) => JSONContent
+) {
+  const context = getSelectedTableContext(editor);
+  if (!editor || !context) return false;
+
+  const currentTable = context.tableNode.toJSON() as JSONContent;
+  const nextTable = updater(currentTable, context);
+  const nextNode = editor.schema.nodeFromJSON(nextTable);
+  const tr = editor.state.tr.replaceWith(
+    context.tablePos,
+    context.tablePos + context.tableNode.nodeSize,
+    nextNode
+  );
+
+  editor.view.dispatch(tr.scrollIntoView());
+  editor.commands.focus();
+  return true;
+}
+
+function deleteSelectedTableNode(editor: Editor | null) {
+  const context = getSelectedTableContext(editor);
+  if (!editor || !context) return false;
+
+  const tr = editor.state.tr.delete(
+    context.tablePos,
+    context.tablePos + context.tableNode.nodeSize
+  );
+
+  editor.view.dispatch(tr.scrollIntoView());
+  editor.commands.focus();
+  return true;
 }
 
 export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEditorProps) {
@@ -357,16 +807,39 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3, 4] },
+        codeBlock: false,
       }),
+      GuideUnderline,
+      GuideTextColor,
+      GuideCodeBlock,
       Link.configure({
         openOnClick: false,
         autolink: true,
         defaultProtocol: 'https',
       }),
-      Image,
+      GuideImage,
+      GuideTable,
+      GuideTableRow,
+      GuideTableCell,
+      GuideTableHeader,
+      GuideTaskList,
+      GuideTaskItem,
       ...gw2NodeExtensions,
     ],
     content: parsed.document || DEFAULT_DOC,
+    editorProps: {
+      handleKeyDown: (_view, event) => {
+        if (!editor) return false;
+        if (!event.ctrlKey && !event.metaKey) return false;
+        if (event.key !== 'Backspace' && event.key !== 'Delete') return false;
+
+        const removed = deleteSelectedTableNode(editor);
+        if (!removed) return false;
+
+        event.preventDefault();
+        return true;
+      },
+    },
     onUpdate: ({ editor: currentEditor }) => {
       onChange?.(serializeDocument(currentEditor.getJSON()));
     },
@@ -379,6 +852,10 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const selectedImage = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => getSelectedImage(currentEditor),
+  });
+  const selectedTable = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => getTableSelectionState(currentEditor),
   });
 
   useEffect(() => {
@@ -475,21 +952,152 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     editor.chain().focus().extendMarkRange('link').setLink({ href: normalized }).run();
   };
 
+  const applyTextColor = () => {
+    if (!editor) return;
+    const previous = normalizeTextColor(editor.getAttributes('textColor').color) || '#1677ff';
+    const next = window.prompt('请输入文本颜色，例如 #1677ff 或 rgb(22,119,255)', previous);
+    if (next === null) return;
+    const color = normalizeTextColor(next);
+    if (!color) {
+      editor.chain().focus().unsetMark('textColor').run();
+      return;
+    }
+    editor.chain().focus().setMark('textColor', { color }).run();
+  };
+
+  const insertBasicTable = () => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'table',
+      content: [
+        {
+          type: 'tableRow',
+          content: [
+            { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: '列 1' }] }] },
+            { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: '列 2' }] }] },
+            { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: '列 3' }] }] },
+          ],
+        },
+        {
+          type: 'tableRow',
+          content: [
+            { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '内容 1' }] }] },
+            { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '内容 2' }] }] },
+            { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '内容 3' }] }] },
+          ],
+        },
+      ],
+    }).run();
+  };
+
+  const insertTableRow = (direction: 'before' | 'after') => {
+    updateSelectedTable(editor, (table, context) => {
+      const rows = Array.isArray(table.content) ? [...table.content] : [];
+      const referenceRow = rows[context.rowIndex];
+      const referenceCells = Array.isArray(referenceRow?.content) ? referenceRow.content : [];
+      const isHeaderRow =
+        context.rowIndex === 0 &&
+        Array.isArray(referenceRow?.content) &&
+        referenceRow.content.length > 0 &&
+        referenceRow.content.every((cell) => cell.type === 'tableHeader');
+      if (direction === 'before' && isHeaderRow) {
+        return table;
+      }
+      const nextRow: JSONContent = {
+        type: 'tableRow',
+        content: referenceCells.map((cell) =>
+          createEmptyTableCellLike(cell, isHeaderRow ? 'tableCell' : undefined)
+        ),
+      };
+
+      const insertIndex = direction === 'before' ? context.rowIndex : context.rowIndex + 1;
+      rows.splice(insertIndex, 0, nextRow);
+
+      return {
+        ...table,
+        content: rows,
+      };
+    });
+  };
+
+  const insertTableColumn = (direction: 'before' | 'after') => {
+    updateSelectedTable(editor, (table, context) => {
+      const rows = Array.isArray(table.content) ? table.content : [];
+      const insertOffset = direction === 'before' ? 0 : 1;
+
+      return {
+        ...table,
+        content: rows.map((row) => {
+          const cells = Array.isArray(row.content) ? [...row.content] : [];
+          const referenceCell = cells[context.colIndex];
+          const insertIndex = Math.min(context.colIndex + insertOffset, cells.length);
+          cells.splice(insertIndex, 0, createEmptyTableCellLike(referenceCell));
+
+          return {
+            ...row,
+            content: cells,
+          };
+        }),
+      };
+    });
+  };
+
+  const removeTableRow = () => {
+    if (!selectedTable || !selectedTable.canRemoveRow) return;
+
+    updateSelectedTable(editor, (table, context) => {
+      const rows = Array.isArray(table.content) ? [...table.content] : [];
+      rows.splice(context.rowIndex, 1);
+
+      return {
+        ...table,
+        content: rows,
+      };
+    });
+  };
+
+  const removeTableColumn = () => {
+    if (!selectedTable || selectedTable.colCount <= 1) return;
+
+    updateSelectedTable(editor, (table, context) => {
+      const rows = Array.isArray(table.content) ? table.content : [];
+
+      return {
+        ...table,
+        content: rows.map((row) => {
+          const cells = Array.isArray(row.content) ? [...row.content] : [];
+          cells.splice(context.colIndex, 1);
+
+          return {
+            ...row,
+            content: cells,
+          };
+        }),
+      };
+    });
+  };
+
+  const removeSelectedTable = () => {
+    deleteSelectedTableNode(editor);
+  };
+
   const submitImageModal = async () => {
     if (!editor) return;
 
-    try {
-      const values = await imageForm.validateFields();
-      const src = String(values.src || '').trim();
-      const alt = String(values.alt || '').trim();
-      if (!src) return;
-      if (imageModal?.mode === 'edit' && selectedImage) {
-        editor.chain().focus().updateAttributes('image', { src, alt }).run();
-      } else {
-        editor.chain().focus().setImage({ src, alt }).run();
-      }
-      closeImageModal();
-    } catch {
+      try {
+        const values = await imageForm.validateFields();
+        const src = String(values.src || '').trim();
+        const alt = String(values.alt || '').trim();
+        const width = normalizeImageWidth(values.width);
+        const align = normalizeImageAlign(values.align) || 'center';
+        if (!src) return;
+        if (imageModal?.mode === 'edit' && selectedImage) {
+          editor.chain().focus().updateAttributes('image', { src, alt, width, align }).run();
+        } else {
+          editor.chain().focus().insertContent({ type: 'image', attrs: { src, alt, width, align } }).run();
+        }
+        closeImageModal();
+      } catch {
       return;
     }
   };
@@ -514,7 +1122,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
     try {
       setImageUploading(true);
       const uploaded = await uploadGuideCover(options.file as File);
-      imageForm.setFieldsValue({ src: uploaded.path || uploaded.url });
+      imageForm.setFieldsValue({ src: uploaded.url || uploaded.path });
       message.success('图片上传成功');
       options.onSuccess?.(uploaded);
     } catch (error: unknown) {
@@ -533,6 +1141,25 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const editSelectedImage = () => {
     if (!selectedImage) return;
     openImageModal('edit', selectedImage);
+  };
+
+  const applySelectedImagePreset = (patch: Partial<GuideImageFormValues>) => {
+    if (!editor || !selectedImage) return;
+    const nextWidth =
+      patch.width !== undefined ? normalizeImageWidth(patch.width) : normalizeImageWidth(selectedImage.width);
+    const nextAlign =
+      patch.align !== undefined ? normalizeImageAlign(patch.align) || 'center' : normalizeImageAlign(selectedImage.align) || 'center';
+
+    editor
+      .chain()
+      .focus()
+      .updateAttributes('image', {
+        src: selectedImage.src,
+        alt: selectedImage.alt,
+        width: nextWidth,
+        align: nextAlign,
+      })
+      .run();
   };
 
   const removeSelectedImage = () => {
@@ -641,6 +1268,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   return (
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
       <div className="guide-richtext-editor">
+        <div className="guide-richtext-toolbar-shell">
         <Space wrap className="guide-richtext-toolbar">
           {markdownImportButton}
           <Tooltip title="正文段落">
@@ -664,6 +1292,16 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
           <Tooltip title="斜体">
             <Button size="small" icon={<ItalicOutlined />} onClick={() => editor?.chain().focus().toggleItalic().run()} />
           </Tooltip>
+          <Tooltip title="下划线">
+            <Button size="small" onClick={() => editor?.chain().focus().toggleMark('underline').run()}>
+              U
+            </Button>
+          </Tooltip>
+          <Tooltip title="文字颜色">
+            <Button size="small" onClick={applyTextColor}>
+              色
+            </Button>
+          </Tooltip>
           <Tooltip title="行内代码">
             <Button size="small" icon={<CodeOutlined />} onClick={() => editor?.chain().focus().toggleCode().run()} />
           </Tooltip>
@@ -680,6 +1318,25 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               icon={<OrderedListOutlined />}
               onClick={() => editor?.chain().focus().toggleOrderedList().run()}
             />
+          </Tooltip>
+          <Tooltip title="任务列表">
+            <Button
+              size="small"
+              onClick={() =>
+                editor?.chain().focus().insertContent({
+                  type: 'taskList',
+                  content: [
+                    {
+                      type: 'taskItem',
+                      attrs: { checked: false },
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: '待办事项' }] }],
+                    },
+                  ],
+                }).run()
+              }
+            >
+              任务
+            </Button>
           </Tooltip>
           <Tooltip title="引用">
             <Button size="small" onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
@@ -700,6 +1357,51 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
           <Tooltip title="图片">
             <Button size="small" icon={<PictureOutlined />} onClick={() => openImageModal('create')} />
           </Tooltip>
+          <Tooltip title="基础表格">
+            <Button size="small" onClick={insertBasicTable}>
+              表格
+            </Button>
+          </Tooltip>
+          <Tooltip title="在当前单元格上方插入一行">
+            <Button size="small" disabled={!selectedTable || !selectedTable.canInsertRowBefore} onClick={() => insertTableRow('before')}>
+              上方行
+            </Button>
+          </Tooltip>
+          <Tooltip title="在当前单元格下方插入一行">
+            <Button size="small" disabled={!selectedTable} onClick={() => insertTableRow('after')}>
+              下方行
+            </Button>
+          </Tooltip>
+          <Tooltip title="在当前单元格左侧插入一列">
+            <Button size="small" disabled={!selectedTable} onClick={() => insertTableColumn('before')}>
+              左侧列
+            </Button>
+          </Tooltip>
+          <Tooltip title="在当前单元格右侧插入一列">
+            <Button size="small" disabled={!selectedTable} onClick={() => insertTableColumn('after')}>
+              右侧列
+            </Button>
+          </Tooltip>
+          <Tooltip title="删除当前单元格所在行">
+            <Button
+              size="small"
+              danger
+              disabled={!selectedTable || !selectedTable.canRemoveRow}
+              onClick={removeTableRow}
+            >
+              删除行
+            </Button>
+          </Tooltip>
+          <Tooltip title="删除当前单元格所在列">
+            <Button
+              size="small"
+              danger
+              disabled={!selectedTable || selectedTable.colCount <= 1}
+              onClick={removeTableColumn}
+            >
+              删除列
+            </Button>
+          </Tooltip>
           <Tooltip title="编辑当前选中的图片">
             <Button
               size="small"
@@ -707,6 +1409,36 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               disabled={!selectedImage}
               onClick={editSelectedImage}
             />
+          </Tooltip>
+          <Tooltip title="图片宽度 50%">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ width: '50%' })}>
+              图 50%
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片宽度 75%">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ width: '75%' })}>
+              图 75%
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片宽度 100%">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ width: '100%' })}>
+              图 100%
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片左对齐">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ align: 'left' })}>
+              图左
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片居中">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ align: 'center' })}>
+              图中
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片右对齐">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ align: 'right' })}>
+              图右
+            </Button>
           </Tooltip>
           <Tooltip title="删除当前选中的图片">
             <Button
@@ -726,6 +1458,9 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
         </Space>
 
         <Space wrap className="guide-richtext-toolbar guide-richtext-toolbar-secondary">
+          <Button size="small" danger disabled={!selectedTable} onClick={removeSelectedTable}>
+            删除表格
+          </Button>
           {GW2_NODE_DEFINITIONS.map((definition) => (
             <Button key={definition.name} size="small" onClick={() => openGw2NodeModal('create', definition)}>
               {definition.title}
@@ -753,6 +1488,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
             </Button>
           </Tooltip>
         </Space>
+        </div>
 
         <div className="guide-richtext-surface">
           <EditorContent editor={editor} />
@@ -826,6 +1562,36 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
             </Form.Item>
             <Form.Item name="alt" label="替代文本">
               <Input placeholder="选填，用于补充图片说明" />
+            </Form.Item>
+            <Form.Item
+              name="width"
+              label="宽度"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!String(value || '').trim()) return Promise.resolve();
+                    return normalizeImageWidth(value)
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('请输入 480px、50% 或纯数字'));
+                  },
+                },
+              ]}
+            >
+              <Input placeholder="例如 480px、50%，留空则按原始宽度显示" />
+            </Form.Item>
+            <Space wrap size={8}>
+              <Button size="small" onClick={() => imageForm.setFieldValue('width', '50%')}>50%</Button>
+              <Button size="small" onClick={() => imageForm.setFieldValue('width', '75%')}>75%</Button>
+              <Button size="small" onClick={() => imageForm.setFieldValue('width', '100%')}>100%</Button>
+              <Button size="small" onClick={() => imageForm.setFieldValue('width', '480px')}>480px</Button>
+              <Button size="small" onClick={() => imageForm.setFieldValue('width', '720px')}>720px</Button>
+            </Space>
+            <Form.Item name="align" label="对齐" initialValue="center">
+              <Space wrap size={8}>
+                <Button size="small" onClick={() => imageForm.setFieldValue('align', 'left')}>左对齐</Button>
+                <Button size="small" onClick={() => imageForm.setFieldValue('align', 'center')}>居中</Button>
+                <Button size="small" onClick={() => imageForm.setFieldValue('align', 'right')}>右对齐</Button>
+              </Space>
             </Form.Item>
           </Form>
         </Space>
