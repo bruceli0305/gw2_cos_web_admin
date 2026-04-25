@@ -3,6 +3,7 @@ import {
   ProFormDigit,
   ProFormList,
   ProFormSelect,
+  ProFormSwitch,
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-form';
@@ -59,6 +60,8 @@ type GuideArticleFormValues = {
   canonicalUrl?: string;
   authorName?: string;
   versionLabel?: string;
+  isFeatured?: boolean;
+  isRecommended?: boolean;
 };
 
 type GuideEditorTabKey = 'base' | 'content' | 'seo';
@@ -80,6 +83,8 @@ function toFormValues(article?: GuideArticleAdmin): GuideArticleFormValues {
       relatedArticleSlugs: [],
       seoKeywords: [],
       contentJsonText: DEFAULT_CONTENT_JSON,
+      isFeatured: false,
+      isRecommended: false,
     };
   }
 
@@ -101,6 +106,8 @@ function toFormValues(article?: GuideArticleAdmin): GuideArticleFormValues {
     canonicalUrl: article.canonicalUrl,
     authorName: article.authorName,
     versionLabel: article.versionLabel,
+    isFeatured: !!article.isFeatured,
+    isRecommended: !!article.isRecommended,
   };
 }
 
@@ -262,6 +269,16 @@ export default function GuideArticleEditPage() {
             name="versionLabel"
             label="版本标签"
             fieldProps={{ placeholder: '例如：2026 春季版' }}
+          />
+          <ProFormSwitch
+            name="isRecommended"
+            label="首页推荐"
+            tooltip="用于攻略首页右侧“推荐阅读”主卡片。若未配置任何推荐文章，前台会回退到最近发布文章。"
+          />
+          <ProFormSwitch
+            name="isFeatured"
+            label="精选导读"
+            tooltip="用于攻略首页“精选导读”列表。若未配置任何加精文章，前台会回退到最近发布文章。"
           />
           <Form.Item name="coverImage" label="封面图">
             <GuideCoverUpload />
@@ -451,6 +468,8 @@ export default function GuideArticleEditPage() {
               canonicalUrl: String(values.canonicalUrl || '').trim() || undefined,
               authorName: String(values.authorName || '').trim() || undefined,
               versionLabel: String(values.versionLabel || '').trim() || undefined,
+              isFeatured: !!values.isFeatured,
+              isRecommended: !!values.isRecommended,
             };
 
             if (isCreate) {
