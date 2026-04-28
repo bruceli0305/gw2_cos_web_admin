@@ -74,6 +74,13 @@ function parseJsonObject(input: string) {
   return parsed as Record<string, unknown>;
 }
 
+function resolveSubmittedContentJsonText(values: GuideArticleFormValues, article: GuideArticleAdmin | null, isCreate: boolean) {
+  const submitted = typeof values.contentJsonText === 'string' ? values.contentJsonText.trim() : '';
+  if (submitted) return submitted;
+  if (!isCreate && article?.contentJson) return JSON.stringify(article.contentJson, null, 2);
+  return DEFAULT_CONTENT_JSON;
+}
+
 function toFormValues(article?: GuideArticleAdmin): GuideArticleFormValues {
   if (!article) {
     return {
@@ -439,7 +446,7 @@ export default function GuideArticleEditPage() {
         }}
         onFinish={async (values) => {
           try {
-            const contentJson = parseJsonObject(String(values.contentJsonText || '').trim() || DEFAULT_CONTENT_JSON);
+            const contentJson = parseJsonObject(resolveSubmittedContentJsonText(values, article, isCreate));
             const faq: GuideFaqItem[] = Array.isArray(values.faq)
               ? values.faq
                   .map((item, index) => ({
