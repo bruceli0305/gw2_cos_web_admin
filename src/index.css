@@ -203,6 +203,47 @@ button {
   border-radius: 8px;
 }
 
+.guide-richtext-surface .tiptap img.ProseMirror-selectednode {
+  outline: 3px solid #1677ff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(22, 119, 255, 0.18);
+}
+
+.guide-richtext-surface .tiptap img[data-wrap='left'] {
+  float: left;
+  max-width: calc(100% - 16px);
+  margin: 0 16px 12px 0;
+}
+
+.guide-richtext-surface .tiptap img[data-wrap='right'] {
+  float: right;
+  max-width: calc(100% - 16px);
+  margin: 0 0 12px 16px;
+}
+
+.guide-richtext-surface .tiptap img[data-wrap='left']:not([data-width]),
+.guide-richtext-surface .tiptap img[data-wrap='right']:not([data-width]) {
+  width: calc(50% - 8px);
+  max-width: calc(50% - 8px);
+}
+
+@media (max-width: 640px) {
+  .guide-richtext-surface .tiptap img[data-wrap='left'],
+  .guide-richtext-surface .tiptap img[data-wrap='right'] {
+    float: none;
+    display: block;
+    width: auto;
+    max-width: 100%;
+    margin: 0 0 16px;
+  }
+
+  .guide-richtext-surface .tiptap img[data-wrap='left']:not([data-width]),
+  .guide-richtext-surface .tiptap img[data-wrap='right']:not([data-width]) {
+    width: auto;
+    max-width: 100%;
+  }
+}
+
 .guide-richtext-surface .tiptap table {
   width: 100%;
   margin-block: 0 16px;

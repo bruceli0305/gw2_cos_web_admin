@@ -60,6 +60,7 @@ type GuideImageFormValues = {
   alt?: string;
   width?: string;
   align?: 'left' | 'center' | 'right';
+  wrap?: 'none' | 'left' | 'right';
 };
 
 type ImageModalState = {
@@ -162,13 +163,30 @@ function normalizeImageAlign(value: unknown): 'left' | 'center' | 'right' | null
   return null;
 }
 
-function buildImageStyle(width: unknown, align: unknown) {
+function normalizeImageWrap(value: unknown): 'none' | 'left' | 'right' {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'left' || raw === 'right') return raw;
+  return 'none';
+}
+
+function buildImageStyle(width: unknown, align: unknown, wrap: unknown) {
   const normalizedWidth = normalizeImageWidth(width);
   const normalizedAlign = normalizeImageAlign(align);
+  const normalizedWrap = normalizeImageWrap(wrap);
   const styles: string[] = [];
 
   if (normalizedWidth) {
     styles.push(`width: ${normalizedWidth}`);
+  }
+
+  if (normalizedWrap === 'left') {
+    styles.push('float: left', 'margin: 0 16px 12px 0');
+    return styles.join('; ');
+  }
+
+  if (normalizedWrap === 'right') {
+    styles.push('float: right', 'margin: 0 0 12px 16px');
+    return styles.join('; ');
   }
 
   if (normalizedAlign === 'center') {
@@ -223,19 +241,29 @@ const GuideImage = Image.extend({
           return align ? { 'data-align': align } : {};
         },
       },
+      wrap: {
+        default: 'none',
+        parseHTML: (element) => normalizeImageWrap(element.getAttribute('data-wrap')),
+        renderHTML: (attributes) => {
+          const wrap = normalizeImageWrap(attributes.wrap);
+          return wrap !== 'none' ? { 'data-wrap': wrap } : {};
+        },
+      },
     };
   },
 
-  renderHTML({ HTMLAttributes }) {
-    const width = normalizeImageWidth(HTMLAttributes.width);
-    const align = normalizeImageAlign(HTMLAttributes.align) || 'center';
-    const style = buildImageStyle(width, align);
+  renderHTML({ HTMLAttributes, node }) {
+    const width = normalizeImageWidth(node.attrs.width);
+    const align = normalizeImageAlign(node.attrs.align) || 'center';
+    const wrap = normalizeImageWrap(node.attrs.wrap);
+    const style = buildImageStyle(width, align, wrap);
 
     return [
       'img',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         ...(width ? { 'data-width': width } : {}),
         'data-align': align,
+        ...(wrap !== 'none' ? { 'data-wrap': wrap } : {}),
         ...(style ? { style } : {}),
       }),
     ];
@@ -666,6 +694,7 @@ function getSelectedImage(editor: ReturnType<typeof useEditor> | null): GuideIma
     alt: typeof attrs.alt === 'string' ? attrs.alt : '',
     width: typeof attrs.width === 'string' ? attrs.width : '',
     align: normalizeImageAlign(attrs.align) || 'center',
+    wrap: normalizeImageWrap(attrs.wrap),
   };
 }
 
@@ -1090,11 +1119,12 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
         const alt = String(values.alt || '').trim();
         const width = normalizeImageWidth(values.width);
         const align = normalizeImageAlign(values.align) || 'center';
+        const wrap = normalizeImageWrap(values.wrap);
         if (!src) return;
         if (imageModal?.mode === 'edit' && selectedImage) {
-          editor.chain().focus().updateAttributes('image', { src, alt, width, align }).run();
+          editor.chain().focus().updateAttributes('image', { src, alt, width, align, wrap }).run();
         } else {
-          editor.chain().focus().insertContent({ type: 'image', attrs: { src, alt, width, align } }).run();
+          editor.chain().focus().insertContent({ type: 'image', attrs: { src, alt, width, align, wrap } }).run();
         }
         closeImageModal();
       } catch {
@@ -1149,6 +1179,8 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
       patch.width !== undefined ? normalizeImageWidth(patch.width) : normalizeImageWidth(selectedImage.width);
     const nextAlign =
       patch.align !== undefined ? normalizeImageAlign(patch.align) || 'center' : normalizeImageAlign(selectedImage.align) || 'center';
+    const nextWrap =
+      patch.wrap !== undefined ? normalizeImageWrap(patch.wrap) : normalizeImageWrap(selectedImage.wrap);
 
     editor
       .chain()
@@ -1158,6 +1190,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
         alt: selectedImage.alt,
         width: nextWidth,
         align: nextAlign,
+        wrap: nextWrap,
       })
       .run();
   };
@@ -1440,6 +1473,21 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
               图右
             </Button>
           </Tooltip>
+          <Tooltip title="图片不环绕">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ wrap: 'none' })}>
+              不环绕
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片左侧文字环绕">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ wrap: 'left' })}>
+              左环绕
+            </Button>
+          </Tooltip>
+          <Tooltip title="图片右侧文字环绕">
+            <Button size="small" disabled={!selectedImage} onClick={() => applySelectedImagePreset({ wrap: 'right' })}>
+              右环绕
+            </Button>
+          </Tooltip>
           <Tooltip title="删除当前选中的图片">
             <Button
               size="small"
@@ -1591,6 +1639,13 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
                 <Button size="small" onClick={() => imageForm.setFieldValue('align', 'left')}>左对齐</Button>
                 <Button size="small" onClick={() => imageForm.setFieldValue('align', 'center')}>居中</Button>
                 <Button size="small" onClick={() => imageForm.setFieldValue('align', 'right')}>右对齐</Button>
+              </Space>
+            </Form.Item>
+            <Form.Item name="wrap" label="文字环绕" initialValue="none">
+              <Space wrap size={8}>
+                <Button size="small" onClick={() => imageForm.setFieldValue('wrap', 'none')}>不环绕</Button>
+                <Button size="small" onClick={() => imageForm.setFieldValue('wrap', 'left')}>左环绕</Button>
+                <Button size="small" onClick={() => imageForm.setFieldValue('wrap', 'right')}>右环绕</Button>
               </Space>
             </Form.Item>
           </Form>
