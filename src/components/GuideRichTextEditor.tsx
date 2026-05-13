@@ -15,16 +15,16 @@ import {
   UnorderedListOutlined,
 } from '@ant-design/icons';
 import { Mark, Node, mergeAttributes } from '@tiptap/core';
-import { Alert, Button, Collapse, Form, Input, InputNumber, Modal, Space, Tooltip, Typography, Upload, message } from 'antd';
+import { Alert, Button, Collapse, Form, Input, InputNumber, Modal, Select, Space, Tooltip, Typography, Upload, message } from 'antd';
 import type { UploadProps } from 'antd';
 import type { Editor, JSONContent } from '@tiptap/react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type UIEvent } from 'react';
 import { importMarkdownToGuideDoc } from './guideMarkdown';
-import { uploadGuideCover } from '../services/guides';
+import { searchGuideGw2Refs, uploadGuideCover, type GuideGw2RefSearchItem, type GuideGw2RefSearchType } from '../services/guides';
 import { getErrorMessage } from '../services/request';
 
 type GuideRichTextEditorProps = {
@@ -53,6 +53,16 @@ type Gw2NodeModalState = {
   mode: 'create' | 'edit';
   definition: Gw2NodeDefinition;
   initialAttrs?: Gw2NodeFormValues;
+};
+
+type Gw2RefSearchState = {
+  type: GuideGw2RefSearchType | null;
+  query: string;
+  page: number;
+  items: GuideGw2RefSearchItem[];
+  loading: boolean;
+  hasMore: boolean;
+  error: string;
 };
 
 type GuideImageFormValues = {
@@ -555,6 +565,20 @@ function findGw2NodeDefinition(name: string) {
   return GW2_NODE_DEFINITIONS.find((item) => item.name === name) || null;
 }
 
+function getGw2RefSearchType(definition: Gw2NodeDefinition): GuideGw2RefSearchType | null {
+  if (definition.name === 'gw2-item') return 'item';
+  if (definition.name === 'gw2-skill') return 'skill';
+  if (definition.name === 'gw2-trait') return 'trait';
+  return null;
+}
+
+function getGw2PrimaryIdAttr(definition: Gw2NodeDefinition) {
+  if (definition.name === 'gw2-item') return 'itemId';
+  if (definition.name === 'gw2-skill') return 'skillId';
+  if (definition.name === 'gw2-trait') return 'traitId';
+  return null;
+}
+
 function pickGw2NodeDisplay(attrs: Record<string, unknown>, fallback: string) {
   const candidates = [attrs.label, attrs.name, attrs.value, attrs.buildCode];
   for (const candidate of candidates) {
@@ -826,6 +850,15 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   const serializedSupportedDoc = canUseVisualEditor ? JSON.stringify(parsed.document || DEFAULT_DOC) : '';
   const [gw2NodeModal, setGw2NodeModal] = useState<Gw2NodeModalState | null>(null);
   const [gw2NodeForm] = Form.useForm<Gw2NodeFormValues>();
+  const [gw2RefSearch, setGw2RefSearch] = useState<Gw2RefSearchState>({
+    type: null,
+    query: '',
+    page: 1,
+    items: [],
+    loading: false,
+    hasMore: false,
+    error: '',
+  });
   const [imageModal, setImageModal] = useState<ImageModalState | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageForm] = Form.useForm<GuideImageFormValues>();
@@ -897,11 +930,66 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
   useEffect(() => {
     if (!gw2NodeModal) {
       gw2NodeForm.resetFields();
+      setGw2RefSearch({ type: null, query: '', page: 1, items: [], loading: false, hasMore: false, error: '' });
       return;
     }
 
     gw2NodeForm.setFieldsValue(gw2NodeModal.initialAttrs || {});
+    const refType = getGw2RefSearchType(gw2NodeModal.definition);
+    setGw2RefSearch({
+      type: refType,
+      query: '',
+      page: 1,
+      items: [],
+      loading: false,
+      hasMore: false,
+      error: '',
+    });
   }, [gw2NodeForm, gw2NodeModal]);
+
+  useEffect(() => {
+    if (!gw2RefSearch.type || !gw2RefSearch.query.trim()) {
+      setGw2RefSearch((current) => ({
+        ...current,
+        items: [],
+        loading: false,
+        hasMore: false,
+        error: '',
+      }));
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setGw2RefSearch((current) => ({ ...current, loading: true, error: '' }));
+      searchGuideGw2Refs(gw2RefSearch.type as GuideGw2RefSearchType, gw2RefSearch.query, gw2RefSearch.page)
+        .then((result) => {
+          if (cancelled) return;
+          setGw2RefSearch((current) => ({
+            ...current,
+            items: gw2RefSearch.page <= 1 ? result.items : [...current.items, ...result.items],
+            loading: false,
+            hasMore: result.hasMore,
+            error: '',
+          }));
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          setGw2RefSearch((current) => ({
+            ...current,
+            items: gw2RefSearch.page <= 1 ? [] : current.items,
+            loading: false,
+            hasMore: false,
+            error: getErrorMessage(error, 'GW2 数据搜索失败'),
+          }));
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [gw2RefSearch.page, gw2RefSearch.query, gw2RefSearch.type]);
 
   useEffect(() => {
     if (!imageModal) {
@@ -931,6 +1019,84 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
 
   const closeGw2NodeModal = () => {
     setGw2NodeModal(null);
+  };
+
+  const handleGw2RefSearch = (query: string) => {
+    setGw2RefSearch((current) => ({
+      ...current,
+      query,
+      page: 1,
+      items: [],
+      hasMore: false,
+      error: '',
+    }));
+  };
+
+  const handleGw2RefPopupScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const reachedBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 8;
+    if (!reachedBottom || gw2RefSearch.loading || !gw2RefSearch.hasMore) return;
+
+    setGw2RefSearch((current) => ({
+      ...current,
+      page: current.page + 1,
+    }));
+  };
+
+  const handleGw2RefSelect = (id: number) => {
+    if (!gw2NodeModal) return;
+    const idAttr = getGw2PrimaryIdAttr(gw2NodeModal.definition);
+    if (!idAttr) return;
+
+    const selected = gw2RefSearch.items.find((item) => item.id === id);
+    gw2NodeForm.setFieldsValue({
+      [idAttr]: id,
+      ...(selected?.name ? { label: selected.name } : {}),
+      ...(gw2NodeModal.definition.name === 'gw2-trait' && selected?.specializationId
+        ? { specializationId: selected.specializationId }
+        : {}),
+    });
+  };
+
+  const renderGw2NodeFormControl = (attr: Gw2AttrDefinition) => {
+    if (!gw2NodeModal) return attr.numeric ? <InputNumber style={{ width: '100%' }} precision={0} /> : <Input />;
+
+    const idAttr = getGw2PrimaryIdAttr(gw2NodeModal.definition);
+    if (idAttr && attr.name === idAttr) {
+      const options = gw2RefSearch.items.map((item) => ({
+        value: item.id,
+        label: `${item.name} (${item.id})`,
+      }));
+
+      return (
+        <Select
+          showSearch
+          allowClear
+          filterOption={false}
+          options={options}
+          onSearch={handleGw2RefSearch}
+          onPopupScroll={handleGw2RefPopupScroll}
+          onChange={(value) => {
+            if (typeof value === 'number') {
+              handleGw2RefSelect(value);
+            }
+          }}
+          notFoundContent={
+            gw2RefSearch.loading ? (
+              <Space size={6}>
+                <LoadingOutlined />
+                <span>搜索中</span>
+              </Space>
+            ) : (
+              gw2RefSearch.error || '输入中文名称或 GW2 ID 搜索'
+            )
+          }
+          placeholder="输入中文名称或 GW2 ID 搜索"
+        />
+      );
+    }
+
+    return attr.numeric ? <InputNumber style={{ width: '100%' }} precision={0} /> : <Input />;
   };
 
   const openImageModal = (mode: 'create' | 'edit', initialValues?: GuideImageFormValues) => {
@@ -1570,7 +1736,7 @@ export default function GuideRichTextEditor({ value, onChange }: GuideRichTextEd
                 label={attr.label}
                 rules={attr.required ? [{ required: true, message: `请填写${attr.label}` }] : undefined}
               >
-                {attr.numeric ? <InputNumber style={{ width: '100%' }} precision={0} /> : <Input />}
+                {renderGw2NodeFormControl(attr)}
               </Form.Item>
             ))}
           </Form>

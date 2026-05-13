@@ -120,6 +120,16 @@ export type GuideCoverUploadResult = {
   size: number;
 };
 
+export type GuideGw2RefSearchType = 'item' | 'skill' | 'trait';
+
+export type GuideGw2RefSearchItem = {
+  id: number;
+  name: string;
+  icon?: string;
+  type: 'items' | 'skills' | 'traits';
+  specializationId?: number;
+};
+
 type GuideArticleListResp = {
   items: GuideArticleAdmin[];
   total: number;
@@ -141,6 +151,13 @@ type GuideTaxonomyResp = {
 
 type GuideCoverUploadResp = GuideCoverUploadResult;
 
+type GuideGw2RefSearchResp = {
+  items: GuideGw2RefSearchItem[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+};
+
 export async function listGuideArticles(params: GuideArticleListParams) {
   return request<GuideArticleListResp>('/admin/v1/guides/articles', {
     params: {
@@ -160,6 +177,17 @@ export async function uploadGuideCover(file: File) {
   return request<GuideCoverUploadResp>('/admin/v1/guides/upload/cover', {
     method: 'POST',
     body: formData,
+  });
+}
+
+export async function searchGuideGw2Refs(type: GuideGw2RefSearchType, q: string, page = 1) {
+  return request<GuideGw2RefSearchResp>('/admin/v1/guides/gw2-refs/search', {
+    params: {
+      type,
+      q,
+      page,
+      limit: 20,
+    },
   });
 }
 
