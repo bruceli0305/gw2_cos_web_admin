@@ -36,7 +36,7 @@ const capabilityCards = [
     icon: <DatabaseOutlined />,
     eyebrow: '游戏数据',
     title: '黄页与同步工具',
-    description: '统一管理资源黄页、传奇蓝图、碎层轮换数据，以及 GW2 API 同步流程。',
+    description: '统一管理资源黄页、传奇蓝图、碎层轮换数据，以及 GW2官方数据库。',
   },
   {
     icon: <LineChartOutlined />,

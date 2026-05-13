@@ -355,7 +355,7 @@ export default function DashboardPage() {
                   翻译缓存
                 </Button>
                 <Button ghost icon={<AppstoreOutlined />} onClick={() => navigate('/data/gw2-api')}>
-                  GW2 API 同步
+                  GW2官方数据库
                 </Button>
                 <Button ghost icon={<LineChartOutlined />} onClick={() => navigate('/data/market-watch')}>
                   交易所观察

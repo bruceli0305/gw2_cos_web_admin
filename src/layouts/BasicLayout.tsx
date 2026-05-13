@@ -130,7 +130,7 @@ export default function BasicLayout() {
           { path: '/data/mistlock-rotations', name: '碎层轮换', icon: <AppstoreOutlined />, requiredPerm: 'fractals.read' },
           { path: '/data/boss-directory', name: '副本 Boss 目录', icon: <AppstoreOutlined />, requiredPerm: 'bosses.read' },
           { path: '/data/boss-rotations', name: '副本 Boss 轮换', icon: <AppstoreOutlined />, requiredPerm: 'bosses.read' },
-          { path: '/data/gw2-api', name: 'GW2 API 同步', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
+          { path: '/data/gw2-api', name: 'GW2官方数据库', icon: <AppstoreOutlined />, requiredPerm: 'gw2data.read' },
         ],
       },
       { path: '/data/market-watch', name: '交易所观察', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
