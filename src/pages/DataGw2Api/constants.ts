@@ -72,12 +72,6 @@ export const GW2_API_TYPE_META: Record<string, Gw2ApiTypeMeta> = {
     endpoint: '/v2/pvp/ranks',
     description: 'PvP 等级和终结技配置，官方端点稳定可用。',
   },
-  'pvp-seasons': {
-    type: 'pvp-seasons',
-    title: 'PvP 赛季',
-    endpoint: '/v2/pvp/seasons',
-    description: 'PvP 赛季、分段和排行榜配置，官方端点稳定可用。',
-  },
   'pvp-runes': {
     type: 'pvp-runes',
     title: 'PvP 符文',
@@ -118,7 +112,7 @@ export const GW2_API_TYPE_GROUPS: Gw2ApiTypeGroup[] = [
     key: 'pvp-config',
     title: 'PvP 基础配置',
     description: '官方当前稳定可获取的 PvP 公共配置。',
-    types: ['pvp-amulets', 'pvp-heroes', 'pvp-ranks', 'pvp-seasons'],
+    types: ['pvp-amulets', 'pvp-heroes', 'pvp-ranks'],
   },
   {
     key: 'pvp-unavailable',

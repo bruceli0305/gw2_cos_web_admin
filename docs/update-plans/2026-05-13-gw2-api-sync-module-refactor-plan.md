@@ -73,7 +73,7 @@
 
 - 角色与战斗规则：`professions`、`specializations`、`traits`、`skills`、`pets`、`legends`
 - 物品与装备属性：`items`、`itemstats`
-- PvP 基础配置：`pvp-amulets`、`pvp-heroes`、`pvp-ranks`、`pvp-seasons`
+- PvP 基础配置：`pvp-amulets`、`pvp-heroes`、`pvp-ranks`
 - PvP 官方不可用端点：`pvp-runes`、`pvp-sigils`、`pvp-rewardtracks`，仅诊断展示，不参与稳定一键同步。
 
 每组展示：
@@ -232,7 +232,6 @@ src/services/gw2Data.ts
 | PvP 基础配置 | `pvp-amulets` | `/v2/pvp/amulets` | PvP 护符配置，数量小，官方端点稳定可用。 |
 | PvP 基础配置 | `pvp-heroes` | `/v2/pvp/heroes` | PvP 英雄与皮肤配置，官方端点稳定可用。 |
 | PvP 基础配置 | `pvp-ranks` | `/v2/pvp/ranks` | PvP 等级和终结技配置，官方端点稳定可用。 |
-| PvP 基础配置 | `pvp-seasons` | `/v2/pvp/seasons` | PvP 赛季、分段和排行榜配置，官方端点稳定可用。 |
 | PvP 官方不可用端点 | `pvp-runes` | `/v2/pvp/runes` | 官方暴露但当前实测返回 503，仅诊断展示。 |
 | PvP 官方不可用端点 | `pvp-sigils` | `/v2/pvp/sigils` | 官方暴露但当前实测返回 503，仅诊断展示。 |
 | PvP 官方不可用端点 | `pvp-rewardtracks` | `/v2/pvp/rewardtracks` | 官方暴露但当前实测返回 503，仅诊断展示。 |
@@ -286,7 +285,7 @@ const GW2_API_TYPE_GROUPS = [
     key: 'pvp-config',
     title: 'PvP 基础配置',
     description: '官方当前稳定可获取的 PvP 公共配置。',
-    types: ['pvp-amulets', 'pvp-heroes', 'pvp-ranks', 'pvp-seasons'],
+    types: ['pvp-amulets', 'pvp-heroes', 'pvp-ranks'],
   },
   {
     key: 'pvp-unavailable',
