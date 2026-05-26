@@ -32,6 +32,7 @@ const DataMistlockRotationsPage = lazy(() => import('./pages/DataMistlockRotatio
 const DataBossDirectoryPage = lazy(() => import('./pages/DataBossDirectory'));
 const DataBossRotationsPage = lazy(() => import('./pages/DataBossRotations'));
 const DataMarketWatchPage = lazy(() => import('./pages/DataMarketWatch'));
+const DataApiAccessLogPage = lazy(() => import('./pages/DataApiAccessLog'));
 const DataGw2ApiPage = lazy(() => import('./pages/DataGw2Api'));
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -115,6 +116,7 @@ function App() {
           <Route path="data/boss-rotations" element={withRouteSuspense(<DataBossRotationsPage />)} />
           <Route path="data/gw2-api" element={withRouteSuspense(<DataGw2ApiPage />)} />
           <Route path="data/market-watch" element={withRouteSuspense(<DataMarketWatchPage />)} />
+          <Route path="data/api-access-log" element={withRouteSuspense(<DataApiAccessLogPage />)} />
 
           <Route path="rbac" element={<Navigate to="/rbac/admin-users" replace />} />
           <Route path="rbac/roles" element={withRouteSuspense(<RbacRolesPage />)} />
