@@ -151,6 +151,7 @@ export default function BasicLayout() {
           { path: '/rbac/admin-users', name: '管理员账号', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
           { path: '/rbac/roles', name: '角色权限', icon: <SafetyOutlined />, requiredPerm: 'rbac.read' },
           { path: '/audit', name: '审计日志', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
+          { path: '/data/api-access-log', name: '接口访问记录', icon: <FileSearchOutlined />, requiredPerm: 'audit.read' },
         ],
       },
     ];
