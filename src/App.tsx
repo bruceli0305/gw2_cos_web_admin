@@ -34,6 +34,7 @@ const DataBossRotationsPage = lazy(() => import('./pages/DataBossRotations'));
 const DataMarketWatchPage = lazy(() => import('./pages/DataMarketWatch'));
 const DataApiAccessLogPage = lazy(() => import('./pages/DataApiAccessLog'));
 const DataGw2ApiPage = lazy(() => import('./pages/DataGw2Api'));
+const SmtpConfigPage = lazy(() => import('./pages/System/SmtpConfig'));
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('gw2_admin_token');
@@ -123,6 +124,8 @@ function App() {
           <Route path="rbac/admin-users" element={withRouteSuspense(<RbacAdminUsersPage />)} />
 
           <Route path="audit" element={withRouteSuspense(<AuditPage />)} />
+
+          <Route path="system/smtp" element={withRouteSuspense(<SmtpConfigPage />)} />
 
           <Route path="fortune" element={<Navigate to="/fortune/records" replace />} />
           <Route path="fortune/records" element={withRouteSuspense(<FortuneRecordsPage />)} />

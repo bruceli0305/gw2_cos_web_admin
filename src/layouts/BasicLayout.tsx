@@ -11,6 +11,7 @@ import {
   LogoutOutlined,
   ReadOutlined,
   SafetyOutlined,
+  SettingOutlined,
   StarOutlined,
   TeamOutlined,
   TranslationOutlined,
@@ -134,6 +135,14 @@ export default function BasicLayout() {
         ],
       },
       { path: '/data/market-watch', name: '交易所观察', icon: <LineChartOutlined />, requiredPerm: 'market.read' },
+      {
+        path: '/system',
+        name: '系统设置',
+        icon: <SettingOutlined />,
+        routes: [
+          { path: '/system/smtp', name: '邮件配置（SMTP）', icon: <SettingOutlined /> },
+        ],
+      },
       {
         path: '/security',
         name: '权限与审计',
