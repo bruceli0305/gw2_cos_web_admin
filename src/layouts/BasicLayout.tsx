@@ -163,9 +163,6 @@ export default function BasicLayout() {
           const allowedByChildren = !!(children && children.length > 0);
 
           if (!allowedSelf && !allowedByChildren) return null;
-          if (item.routes && !item.requiredPerm && children?.length === 1) {
-            return children[0];
-          }
           return { ...item, routes: children };
         })
         .filter(Boolean) as RouteItem[];
