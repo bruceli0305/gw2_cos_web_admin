@@ -2,6 +2,7 @@ import { ProLayout } from '@ant-design/pro-components';
 import {
   AppstoreOutlined,
   DashboardOutlined,
+  HeartOutlined,
   DatabaseOutlined,
   FileSearchOutlined,
   FlagOutlined,
@@ -96,6 +97,7 @@ export default function BasicLayout() {
           { path: '/users', name: '玩家账号', icon: <UserOutlined />, requiredPerm: 'users.read' },
           { path: '/wvw-guilds', name: 'WvW 公会', icon: <FlagOutlined />, requiredPerm: 'wvwGuilds.read' },
           { path: '/content/raids', name: '团本招募', icon: <TrophyOutlined />, requiredPerm: 'raids.read' },
+          { path: '/content/sponsors', name: '打赏记录', icon: <HeartOutlined /> },
         ],
       },
       {
