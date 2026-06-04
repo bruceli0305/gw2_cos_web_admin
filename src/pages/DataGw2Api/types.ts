@@ -59,7 +59,14 @@ export type SyncStatesResponse = {
 };
 
 export type SyncResponse = {
-  results?: Array<{ type?: string }>;
+  results?: Array<{
+    type?: string;
+    strategy?: 'full' | 'incremental';
+    itemsTotal?: number;
+    itemsUpserted?: number;
+    itemsDeleted?: number;
+    itemsSkipped?: number;
+  }>;
 };
 
 export type SyncFormValues = {

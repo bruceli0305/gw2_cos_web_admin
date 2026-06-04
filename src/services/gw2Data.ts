@@ -46,11 +46,29 @@ export async function syncGw2ApiTypes(params: {
   types: string[];
   lang: Language;
   prune: boolean;
+  strategy?: 'full' | 'incremental';
 }) {
   return request<SyncResponse>('/admin/v1/data/gw2-api/sync', {
     method: 'POST',
     body: JSON.stringify(params),
   });
+}
+
+export async function syncGw2ApiEntity(params: {
+  type: string;
+  gw2Id: string;
+  lang: Language;
+}) {
+  return request<{
+    success: boolean;
+    result?: { type: string; lang: Language; gw2Id: string; updated: boolean };
+  }>(
+    `/admin/v1/data/gw2-api/entities/${encodeURIComponent(params.type)}/${encodeURIComponent(params.gw2Id)}/sync`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ lang: params.lang }),
+    },
+  );
 }
 
 export async function backfillGw2ApiNameEn(params: {

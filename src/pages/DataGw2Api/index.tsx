@@ -186,6 +186,10 @@ export default function DataGw2ApiPage() {
         setHasSearch={setHasSearch}
         setTableErrorMessage={setTableErrorMessage}
         onOpenPayload={openPayload}
+        onSynced={async () => {
+          await refreshStates(lang);
+          actionRef.current?.reload();
+        }}
       />
 
       <Gw2PayloadDrawer open={payloadOpen} payload={payload} onClose={() => setPayloadOpen(false)} />

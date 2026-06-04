@@ -17,11 +17,16 @@ type Props = {
 export function Gw2SyncTypeDetail({ type, lang, state, onSynced }: Props) {
   const meta = getTypeMeta(type);
 
-  async function syncCurrentType() {
+  async function syncCurrentType(strategy: 'full' | 'incremental') {
     try {
       message.loading({ content: `${meta.title} 同步中...`, key: 'gw2-sync-current' });
-      const res = await syncGw2ApiTypes({ types: [type], lang, prune: true });
+      const res = await syncGw2ApiTypes({ types: [type], lang, prune: strategy === 'full', strategy });
+      const first = res.results?.[0];
+      const content = strategy === 'incremental'
+        ? `增量同步完成：新增 ${first?.itemsUpserted ?? 0}，已存在 ${first?.itemsSkipped ?? 0}`
+        : `全量更新完成：写入 ${first?.itemsUpserted ?? 0}，删除 ${first?.itemsDeleted ?? 0}`;
       message.success({ content: `同步完成：${res.results?.[0]?.type || type}`, key: 'gw2-sync-current' });
+      message.success({ content, key: 'gw2-sync-current' });
       await runSafeFollowUp(onSynced);
     } catch (error: unknown) {
       message.error({ content: getErrorMessage(error, '同步失败'), key: 'gw2-sync-current' });
@@ -55,7 +60,10 @@ export function Gw2SyncTypeDetail({ type, lang, state, onSynced }: Props) {
           <Button onClick={() => void backfillCurrentType()}>
             补全英文名
           </Button>
-          <Button type="primary" icon={<SyncOutlined />} onClick={() => void syncCurrentType()}>
+          <Button icon={<SyncOutlined />} onClick={() => void syncCurrentType('full')}>
+            全量更新
+          </Button>
+          <Button type="primary" icon={<SyncOutlined />} onClick={() => void syncCurrentType('incremental')}>
             同步当前类型
           </Button>
         </Space>

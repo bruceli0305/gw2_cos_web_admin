@@ -1,9 +1,11 @@
-import { EyeOutlined } from '@ant-design/icons';
+import { EyeOutlined, SyncOutlined } from '@ant-design/icons';
 import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
-import { Button, Tag } from 'antd';
+import { Button, Space, Tag, message } from 'antd';
 import type { RefObject } from 'react';
+import { useState } from 'react';
+import { runSafeFollowUp } from '../../../services/followUp';
 import { getErrorMessage } from '../../../services/request';
-import { fetchGw2ApiEntities, fetchGw2ApiEntityPayload } from '../../../services/gw2Data';
+import { fetchGw2ApiEntities, fetchGw2ApiEntityPayload, syncGw2ApiEntity } from '../../../services/gw2Data';
 import type { EntityItem, Language, TableRequestParams } from '../types';
 
 type Props = {
@@ -14,6 +16,7 @@ type Props = {
   setHasSearch: (hasSearch: boolean) => void;
   setTableErrorMessage: (message: string | null) => void;
   onOpenPayload: (payload: unknown) => void;
+  onSynced: () => Promise<unknown>;
 };
 
 export function Gw2EntityBrowser({
@@ -24,7 +27,24 @@ export function Gw2EntityBrowser({
   setHasSearch,
   setTableErrorMessage,
   onOpenPayload,
+  onSynced,
 }: Props) {
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  async function syncEntity(record: EntityItem) {
+    setSyncingId(record.gw2Id);
+    try {
+      message.loading({ content: `${record.gw2Id} 更新中...`, key: 'gw2-sync-entity' });
+      await syncGw2ApiEntity({ type, gw2Id: record.gw2Id, lang });
+      message.success({ content: `${record.gw2Id} 更新完成`, key: 'gw2-sync-entity' });
+      await runSafeFollowUp(onSynced);
+    } catch (error: unknown) {
+      message.error({ content: getErrorMessage(error, '单条数据更新失败'), key: 'gw2-sync-entity' });
+    } finally {
+      setSyncingId(null);
+    }
+  }
+
   const columns: ProColumns<EntityItem>[] = [
     {
       title: '名称 / 英文名称 / GW2 ID',
@@ -47,9 +67,10 @@ export function Gw2EntityBrowser({
     {
       title: '操作',
       valueType: 'option',
-      width: 120,
+      width: 180,
       render: (_, record) => (
-        <Button
+        <Space size={4}>
+          <Button
           type="link"
           icon={<EyeOutlined />}
           onClick={async () => {
@@ -58,7 +79,16 @@ export function Gw2EntityBrowser({
           }}
         >
           查看
-        </Button>
+          </Button>
+          <Button
+            type="link"
+            icon={<SyncOutlined />}
+            loading={syncingId === record.gw2Id}
+            onClick={() => void syncEntity(record)}
+          >
+            更新
+          </Button>
+        </Space>
       ),
     },
   ];

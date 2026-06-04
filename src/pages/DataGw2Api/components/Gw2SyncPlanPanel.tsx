@@ -16,11 +16,18 @@ type Props = {
 };
 
 export function Gw2SyncPlanPanel({ lang, availableTypes, stateMap, onSelectType, onSynced }: Props) {
-  async function syncGroup(title: string, types: string[]) {
+  async function syncGroup(title: string, types: string[], strategy: 'full' | 'incremental') {
     try {
       message.loading({ content: `${title} 同步中...`, key: 'gw2-sync-group' });
-      await syncGw2ApiTypes({ types, lang, prune: true });
+      const res = await syncGw2ApiTypes({ types, lang, prune: strategy === 'full', strategy });
+      const added = res.results?.reduce((sum, item) => sum + (item.itemsUpserted ?? 0), 0) ?? 0;
+      const skipped = res.results?.reduce((sum, item) => sum + (item.itemsSkipped ?? 0), 0) ?? 0;
+      const deleted = res.results?.reduce((sum, item) => sum + (item.itemsDeleted ?? 0), 0) ?? 0;
+      const content = strategy === 'incremental'
+        ? `${title} 增量同步完成：新增 ${added}，已存在 ${skipped}`
+        : `${title} 全量更新完成：写入 ${added}，删除 ${deleted}`;
       message.success({ content: `${title} 同步完成`, key: 'gw2-sync-group' });
+      message.success({ content, key: 'gw2-sync-group' });
       await runSafeFollowUp(onSynced);
     } catch (error: unknown) {
       message.error({ content: getErrorMessage(error, `${title} 同步失败`), key: 'gw2-sync-group' });
@@ -97,18 +104,26 @@ export function Gw2SyncPlanPanel({ lang, availableTypes, stateMap, onSelectType,
 
                   <Space.Compact block>
                     <Button
-                      style={{ width: '50%' }}
+                      style={{ width: '33.33%' }}
                       disabled={!syncable}
                       onClick={() => void backfillGroup(group.title, groupTypes)}
                     >
                       补全英文名
                     </Button>
                     <Button
-                      style={{ width: '50%' }}
+                      style={{ width: '33.33%' }}
+                      icon={syncable ? <SyncOutlined /> : <ReloadOutlined />}
+                      disabled={!syncable}
+                      onClick={() => void syncGroup(group.title, groupTypes, 'full')}
+                    >
+                      全量更新
+                    </Button>
+                    <Button
+                      style={{ width: '33.33%' }}
                       type="primary"
                       icon={syncable ? <SyncOutlined /> : <ReloadOutlined />}
                       disabled={!syncable}
-                      onClick={() => void syncGroup(group.title, groupTypes)}
+                      onClick={() => void syncGroup(group.title, groupTypes, 'incremental')}
                     >
                       同步本组
                     </Button>
